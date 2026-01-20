@@ -1,0 +1,25 @@
+
+{
+  "name": "Prospera",
+  "short_name": "Prospera",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#191E29",
+  "theme_color": "#01C38D",
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=Prospera&backgroundColor=01C38D",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
