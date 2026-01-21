@@ -4,6 +4,12 @@ export enum UserRole {
   USER = 'USER'
 }
 
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  PENDING = 'PENDING',
+  DEACTIVATED = 'DEACTIVATED'
+}
+
 export enum TransactionStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
@@ -15,6 +21,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
   rank: number;
   groupName?: string;
   totalContributed: number;
@@ -43,7 +50,7 @@ export interface SavingsTarget {
   currentAmount: number;
   deadline: string;
   motive: string;
-  lastUpdated?: number; // Timestamp of last change
+  lastUpdated?: number;
 }
 
 export interface Announcement {
@@ -61,4 +68,5 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   date: string;
   read: boolean;
+  recipientId?: string;
 }

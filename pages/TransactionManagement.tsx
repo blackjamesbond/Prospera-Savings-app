@@ -27,6 +27,31 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
     }
   }, [initialSharedText]);
 
+  // Safe Date Parsing Helper to prevent RangeError: Invalid time value
+  const parseSafeDate = (dateStr: string): string => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) {
+        // Fallback for DD/MM/YYYY
+        const parts = dateStr.split(/[\/\-]/);
+        if (parts.length === 3) {
+          // Assume DD MM YYYY
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const year = parts[2].length === 2 ? 2000 + parseInt(parts[2], 10) : parseInt(parts[2], 10);
+          const fallbackDate = new Date(year, month, day);
+          if (!isNaN(fallbackDate.getTime())) {
+            return fallbackDate.toISOString().split('T')[0];
+          }
+        }
+        return new Date().toISOString().split('T')[0];
+      }
+      return d.toISOString().split('T')[0];
+    } catch {
+      return new Date().toISOString().split('T')[0];
+    }
+  };
+
   // LOCAL PARSER (Regex based - reinforced for multiple E-Africa message styles)
   const handleLocalParse = (msg: string) => {
     if (!msg.trim()) {
@@ -53,7 +78,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
       setExtractedData({
         amount,
         currency: 'KES', // Defaulting to KES if not explicitly caught
-        date: dateMatch ? new Date(dateMatch[0]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        date: dateMatch ? parseSafeDate(dateMatch[0]) : new Date().toISOString().split('T')[0],
         description: 'Instant Local Extraction',
         accountNumber: refMatch ? refMatch[0] : `LOCAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         raw: msg
@@ -73,7 +98,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
     const currentYear = new Date().getFullYear();
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `Strictly extract financial metadata from this text: "${rawMessage}". Year: ${currentYear}. Platform: Prospera. Respond in JSON.`;
+      const prompt = `Strictly extract financial metadata from this text: "${rawMessage}". Year: ${currentYear}. Platform: Prospera. Respond in JSON. Format date as YYYY-MM-DD.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -95,7 +120,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
       });
 
       const data = JSON.parse(response.text.trim());
-      setExtractedData({ ...data, raw: rawMessage });
+      setExtractedData({ ...data, date: parseSafeDate(data.date), raw: rawMessage });
       showToast('AI synthesis successful.', 'success');
     } catch (error) {
       showToast('AI Engine Error. Falling back to local data.', 'error');
@@ -125,16 +150,16 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-2">
         <div>
-          <h1 className="text-3xl font-black dark:text-white text-gray-900 tracking-tight">Ledger Operations</h1>
-          <p className="text-prospera-gray text-sm">Offline-first deterministic contribution processing.</p>
+          <h1 className="text-2xl font-black dark:text-white text-gray-900 tracking-tight">Ledger Operations</h1>
+          <p className="text-prospera-gray text-xs">Offline-first deterministic contribution processing.</p>
         </div>
         {role === UserRole.USER && (
           <button 
             onClick={() => setActiveTab('upload')}
-            className="px-8 py-4 bg-prospera-accent text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-prospera-accent/20 hover:scale-105 transition-all"
+            className="px-6 py-3 bg-prospera-accent text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-prospera-accent/20 hover:scale-105 transition-all"
           >
             New Contribution
           </button>
@@ -146,29 +171,29 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
           <button 
             key={tab}
             onClick={() => setActiveTab(tab as any)}
-            className={`px-8 py-5 border-b-2 transition-all whitespace-nowrap text-[10px] font-black uppercase tracking-widest ${activeTab === tab ? 'border-prospera-accent text-prospera-accent bg-prospera-accent/5' : 'border-transparent text-prospera-gray hover:text-gray-900 dark:hover:text-white'}`}
+            className={`px-6 py-4 border-b-2 transition-all whitespace-nowrap text-[9px] font-black uppercase tracking-widest ${activeTab === tab ? 'border-prospera-accent text-prospera-accent bg-prospera-accent/5' : 'border-transparent text-prospera-gray hover:text-gray-900 dark:hover:text-white'}`}
           >
             {tab}
           </button>
         ))}
       </div>
 
-      <div className="bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 rounded-[2.5rem] p-4 md:p-12 shadow-2xl min-h-[600px]">
+      <div className="bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 rounded-[2rem] p-4 md:p-8 shadow-xl min-h-[500px]">
         {activeTab === 'upload' ? (
-          <div className="max-w-3xl mx-auto space-y-10 animate-in zoom-in-95 duration-300">
-            <div className="text-center space-y-4">
-              <div className="inline-flex p-5 bg-prospera-accent/10 rounded-3xl mb-2">
-                <SearchCode className="w-10 h-10 text-prospera-accent" />
+          <div className="max-w-2xl mx-auto space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="text-center space-y-2">
+              <div className="inline-flex p-3 bg-prospera-accent/10 rounded-2xl mb-1">
+                <SearchCode className="w-8 h-8 text-prospera-accent" />
               </div>
-              <h3 className="text-3xl font-black dark:text-white text-gray-900">Contribution Logic</h3>
-              <p className="text-prospera-gray max-w-lg mx-auto leading-relaxed">
-                Paste your bank or M-Pesa message. The local system handles standard formats instantly. Use the Cloud Engine for complex text.
+              <h3 className="text-xl font-black dark:text-white text-gray-900">Contribution Logic</h3>
+              <p className="text-prospera-gray text-xs max-w-md mx-auto leading-relaxed">
+                Paste your bank or M-Pesa message. The local system handles standard formats instantly.
               </p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               <textarea 
-                className="w-full h-48 p-6 bg-gray-50 dark:bg-prospera-darkest border border-gray-100 dark:border-white/10 rounded-3xl focus:outline-none focus:border-prospera-accent transition-all text-sm leading-relaxed dark:text-white text-gray-900 shadow-inner"
+                className="w-full h-32 p-4 bg-gray-50 dark:bg-prospera-darkest border border-gray-100 dark:border-white/10 rounded-2xl focus:outline-none focus:border-prospera-accent transition-all text-xs leading-relaxed dark:text-white text-gray-900 shadow-inner"
                 placeholder="Paste transaction text here..."
                 value={rawMessage}
                 onChange={(e) => {
@@ -176,14 +201,14 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
                   handleLocalParse(e.target.value);
                 }}
               />
-              <div className="flex justify-between items-center px-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-prospera-gray">
+              <div className="flex justify-between items-center px-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-prospera-gray">
                   {rawMessage.length > 0 ? `${rawMessage.length} bytes input` : 'Ready for input'}
                 </span>
                 <button 
                   onClick={parseWithAI}
                   disabled={isParsing || rawMessage.length < 5}
-                  className="flex items-center gap-3 text-prospera-accent hover:text-white hover:bg-prospera-accent px-4 py-2 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest border border-prospera-accent/20"
+                  className="flex items-center gap-2 text-prospera-accent hover:text-white hover:bg-prospera-accent px-3 py-1.5 rounded-lg transition-all font-black text-[9px] uppercase tracking-widest border border-prospera-accent/20"
                 >
                   {isParsing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   {isParsing ? 'Processing...' : 'Deep Sync'}
@@ -192,29 +217,29 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
             </div>
 
             {extractedData && (
-              <div className="p-8 bg-prospera-accent/5 border border-prospera-accent/20 rounded-[2rem] space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="p-6 bg-prospera-accent/5 border border-prospera-accent/20 rounded-3xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Database className="w-5 h-5 text-prospera-accent" />
-                    <h4 className="font-black text-xs uppercase tracking-[0.2em] text-prospera-accent">Extracted Data</h4>
+                  <div className="flex items-center gap-2">
+                    <Database className="w-4 h-4 text-prospera-accent" />
+                    <h4 className="font-black text-[9px] uppercase tracking-[0.2em] text-prospera-accent">Extracted Data</h4>
                   </div>
-                  <span className="text-[8px] font-black px-2 py-1 bg-prospera-accent text-prospera-darkest rounded-full uppercase">
+                  <span className="text-[7px] font-black px-1.5 py-0.5 bg-prospera-accent text-prospera-darkest rounded-full uppercase">
                     VIA {parseMethod} Engine
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-prospera-gray uppercase font-black tracking-widest">Amount</p>
-                    <p className="text-3xl font-black dark:text-white text-gray-900">{extractedData.currency} {extractedData.amount.toLocaleString()}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] text-prospera-gray uppercase font-black tracking-widest">Amount</p>
+                    <p className="text-xl font-black dark:text-white text-gray-900">{extractedData.currency} {extractedData.amount.toLocaleString()}</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-prospera-gray uppercase font-black tracking-widest">Post Date</p>
-                    <p className="text-xl font-black dark:text-white text-gray-900">{extractedData.date}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] text-prospera-gray uppercase font-black tracking-widest">Post Date</p>
+                    <p className="text-sm font-black dark:text-white text-gray-900">{extractedData.date}</p>
                   </div>
                   <div className="col-span-1 sm:col-span-2 space-y-1">
-                    <p className="text-[10px] text-prospera-gray uppercase font-black tracking-widest">System Reference</p>
-                    <p className="text-sm font-mono bg-white dark:bg-black/20 p-4 rounded-xl dark:text-prospera-accent text-prospera-dark border dark:border-white/5 border-gray-100">
+                    <p className="text-[8px] text-prospera-gray uppercase font-black tracking-widest">System Reference</p>
+                    <p className="text-xs font-mono bg-white dark:bg-black/20 p-3 rounded-lg dark:text-prospera-accent text-prospera-dark border dark:border-white/5 border-gray-100">
                       {extractedData.accountNumber}
                     </p>
                   </div>
@@ -222,7 +247,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
 
                 <button 
                   onClick={handleUpload} 
-                  className="w-full py-5 bg-prospera-accent text-white font-black uppercase tracking-widest text-[10px] rounded-2xl flex items-center justify-center gap-3 hover:shadow-2xl hover:scale-[1.01] transition-all shadow-lg shadow-prospera-accent/20"
+                  className="w-full py-4 bg-prospera-accent text-white font-black uppercase tracking-widest text-[9px] rounded-xl flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] transition-all shadow-md shadow-prospera-accent/20"
                 >
                   Confirm Entry
                 </button>

@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { User, Transaction, SavingsTarget, Announcement, Notification, TransactionStatus, UserRole } from '../types.ts';
+import { User, Transaction, SavingsTarget, Announcement, Notification, TransactionStatus, UserRole, UserStatus } from '../types.ts';
 
 export interface Group {
   id: string;
@@ -19,6 +19,7 @@ interface AppPreferences {
   currency: string;
   timezone: string;
   theme: 'dark' | 'light';
+  fontSize: 'small' | 'medium' | 'large';
   primaryColor: string;
   developerImage?: string;
   appVersion: string;
@@ -57,6 +58,7 @@ interface AppContextType {
   deleteTransaction: (id: string) => void;
   addAnnouncement: (ann: Omit<Announcement, 'id'>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
+  updateUserStatus: (id: string, status: UserStatus) => void;
   updateCurrentUser: (updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
   addNotification: (notif: Omit<Notification, 'id' | 'date' | 'read'>) => void;
@@ -80,6 +82,7 @@ const defaultPreferences: AppPreferences = {
   currency: 'KES',
   timezone: 'UTC+3',
   theme: 'dark',
+  fontSize: 'medium',
   primaryColor: '#01C38D',
   appVersion: '3.1.0-stable',
   appPin: '1234',
@@ -127,7 +130,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [target, setTargetState] = useState<SavingsTarget>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_target`);
     return saved ? JSON.parse(saved) : {
-      id: 't1', title: 'Target Not Set', targetAmount: 0, currentAmount: 0, deadline: '2025-12-31', motive: 'Define your first group goal in the Savings Target tab.'
+      id: 't1', title: 'Target Not Set', targetAmount: 0, currentAmount: 0, deadline: '2025-12-31', motive: 'Define your first group goal.'
     };
   });
 
@@ -140,7 +143,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<ToastState>({ message: '', type: 'info', visible: false });
 
-  // Persistence Sync
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_groups`, JSON.stringify(groups));
     localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(users));
@@ -156,143 +158,94 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
   }, []);
 
+  const addNotification = useCallback((notif: Omit<Notification, 'id' | 'date' | 'read'>) => {
+    setNotifications(prev => [{ ...notif, id: Math.random().toString(36).substr(2, 9), date: 'Today', read: false }, ...prev]);
+  }, []);
+
   const createGroup = (groupName: string, adminName: string, email: string, currency: string): Group => {
     const groupId = groupName.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).substr(2, 4);
     const adminId = 'admin-' + Math.random().toString(36).substr(2, 5);
-    
-    const newGroup: Group = {
-      id: groupId,
-      name: groupName,
-      currency,
-      adminId,
-      creationDate: new Date().toISOString()
-    };
-
-    const adminUser: User = {
-      id: adminId,
-      name: adminName,
-      email,
-      role: UserRole.ADMIN,
-      rank: 0,
-      groupName,
-      totalContributed: 0,
-      gender: 'male'
-    };
-
+    const newGroup: Group = { id: groupId, name: groupName, currency, adminId, creationDate: new Date().toISOString() };
+    const adminUser: User = { id: adminId, name: adminName, email, role: UserRole.ADMIN, status: UserStatus.ACTIVE, rank: 0, groupName, totalContributed: 0, gender: 'male' };
     setGroups(prev => [...prev, newGroup]);
     setUsers(prev => [...prev, adminUser]);
-    showToast(`${groupName} successfully registered!`, 'success');
     return newGroup;
   };
 
   const login = (email: string, role: UserRole, groupId: string, name?: string, groupOverride?: Group) => {
-    // Check state first, then fallback to override for race-condition mitigation
     const group = groups.find(g => g.id === groupId) || groupOverride;
-    
-    if (!group) {
-      showToast('Vault authentication failed. Group not found.', 'error');
-      return;
-    }
-
+    if (!group) return;
     setActiveGroupId(groupId);
-    
-    // Find if user already exists, or create a new one
     const existingUser = users.find(u => u.email === email);
     const userData: User = existingUser || {
       id: role === UserRole.ADMIN ? group.adminId : 'user-' + Math.random().toString(36).substr(2, 5),
       name: name || email.split('@')[0],
       email,
       role,
+      status: role === UserRole.ADMIN ? UserStatus.ACTIVE : UserStatus.PENDING,
       rank: role === UserRole.ADMIN ? 0 : 1,
       groupName: group.name,
       totalContributed: 0,
       gender: 'male'
     };
-
     if (!existingUser) {
       setUsers(prev => [...prev, userData]);
+      addNotification({ title: 'New Access Request', message: `${userData.name} is requesting ingress to the vault.`, type: 'info', recipientId: group.adminId });
     }
-
     setCurrentUser(userData);
-    setPreferences(prev => ({ 
-      ...prev, 
-      currency: group.currency, 
-      groupName: group.name,
-      setupComplete: true 
-    }));
+    setPreferences(prev => ({ ...prev, currency: group.currency, groupName: group.name, setupComplete: true }));
   };
 
-  const logout = () => {
-    setActiveGroupId(null);
-    setCurrentUser(null);
-    localStorage.removeItem(`${STORAGE_KEY}_activeGroupId`);
-    localStorage.removeItem(`${STORAGE_KEY}_currentUser`);
-  };
+  const logout = () => { setActiveGroupId(null); setCurrentUser(null); };
 
   const addTransaction = (tx: Omit<Transaction, 'id'>) => {
-    setTransactions(prev => [{ ...tx, id: Math.random().toString(36).substr(2, 9) }, ...prev]);
+    const activeGroup = groups.find(g => g.id === activeGroupId);
+    const newTx = { ...tx, id: Math.random().toString(36).substr(2, 9) };
+    setTransactions(prev => [newTx, ...prev]);
+    if (activeGroup) {
+      addNotification({ title: 'Ledger Audit Required', message: `${tx.userName} uploaded a deposit for verification.`, type: 'warning', recipientId: activeGroup.adminId });
+    }
     showToast('Ledger entry recorded.', 'success');
   };
 
-  const updateTransaction = (id: string, updates: Partial<Transaction>) => {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-  };
-
   const updateTransactionStatus = (id: string, status: TransactionStatus, notes?: string) => {
-    updateTransaction(id, { status, adminNotes: notes });
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+    setTransactions(prev => prev.map(t => t.id === id ? { ...t, status, adminNotes: notes } : t));
+    addNotification({
+      title: status === TransactionStatus.APPROVED ? 'Capital Verified' : 'Audit Rejected',
+      message: status === TransactionStatus.APPROVED ? `Deposit of ${tx.currency} ${tx.amount.toLocaleString()} is now active.` : `Deposit rejected. Notes: ${notes}`,
+      type: status === TransactionStatus.APPROVED ? 'success' : 'error',
+      recipientId: tx.userId
+    });
   };
 
-  const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+  const updateUserStatus = (id: string, status: UserStatus) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u));
+    if (currentUser?.id === id) setCurrentUser(prev => prev ? { ...prev, status } : null);
+    addNotification({ title: 'Vault Access Update', message: `Your status has been updated to ${status}.`, type: status === UserStatus.ACTIVE ? 'success' : 'info', recipientId: id });
   };
 
   const setTarget = (newTarget: SavingsTarget) => {
     setTargetState({ ...newTarget, lastUpdated: Date.now() });
-    showToast('Circle goals updated.', 'success');
+    addNotification({ title: 'Governance Update', message: `Goal adjusted: ${newTarget.title}. Target: ${preferences.currency} ${newTarget.targetAmount.toLocaleString()}`, type: 'info' });
   };
 
-  const addAnnouncement = (ann: Omit<Announcement, 'id'>) => {
-    setAnnouncements(prev => [{ ...ann, id: Math.random().toString(36).substr(2, 9) }, ...prev]);
-  };
-
-  const updateUser = (id: string, updates: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
-  };
-
-  const updateCurrentUser = (updates: Partial<User>) => {
-    if (currentUser) {
-      const newUser = { ...currentUser, ...updates };
-      setCurrentUser(newUser);
-      updateUser(currentUser.id, updates);
-      showToast('Dossier updated.', 'success');
-    }
-  };
-
-  const deleteUser = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-  };
-
-  const addNotification = (notif: Omit<Notification, 'id' | 'date' | 'read'>) => {
-    setNotifications(prev => [{ ...notif, id: Math.random().toString(36).substr(2, 9), date: 'Today', read: false }, ...prev]);
-  };
-
-  const markNotificationRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const updatePreferences = (updates: Partial<AppPreferences>) => {
-    setPreferences(prev => ({ ...prev, ...updates }));
-  };
-
-  const requestReset = () => {
-    showToast('Request sent successfully', 'success');
-  };
+  const updateTransaction = (id: string, updates: Partial<Transaction>) => setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  const deleteTransaction = (id: string) => setTransactions(prev => prev.filter(t => t.id !== id));
+  const addAnnouncement = (ann: Omit<Announcement, 'id'>) => setAnnouncements(prev => [{ ...ann, id: Math.random().toString(36).substr(2, 9) }, ...prev]);
+  const updateUser = (id: string, updates: Partial<User>) => setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+  const updateCurrentUser = (updates: Partial<User>) => { if (currentUser) { const newUser = { ...currentUser, ...updates }; setCurrentUser(newUser); updateUser(currentUser.id, updates); showToast('Dossier updated.', 'success'); } };
+  const deleteUser = (id: string) => setUsers(prev => prev.filter(u => u.id !== id));
+  const markNotificationRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const updatePreferences = (updates: Partial<AppPreferences>) => setPreferences(prev => ({ ...prev, ...updates }));
+  const requestReset = () => showToast('Request sent.', 'success');
 
   return (
     <AppContext.Provider value={{ 
       groups, activeGroupId, users, currentUser, transactions, target, announcements, notifications, preferences, toast,
       createGroup, setActiveGroup: setActiveGroupId, setTarget, addTransaction, updateTransaction, 
-      updateTransactionStatus, deleteTransaction, addAnnouncement, updateUser, updateCurrentUser, 
+      updateTransactionStatus, deleteTransaction, addAnnouncement, updateUser, updateUserStatus, updateCurrentUser, 
       deleteUser, addNotification, markNotificationRead, updatePreferences, showToast, requestReset, login, logout
     }}>
       {children}

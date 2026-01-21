@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth" data-font-size="medium">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,6 +17,11 @@
         --prospera-darkest: #191E29;
       }
 
+      /* Extreme Global Font Scaling */
+      html[data-font-size="small"] { font-size: 11px; }
+      html[data-font-size="medium"] { font-size: 14px; }
+      html[data-font-size="large"] { font-size: 16px; }
+
       body {
         font-family: 'Inter', sans-serif;
         overflow-x: hidden;
@@ -24,11 +29,9 @@
         -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Seamless transitions between pages */
       .page-transition-enter { opacity: 0; transform: translateY(10px); }
       .page-transition-enter-active { opacity: 1; transform: translateY(0); transition: all 400ms ease-out; }
 
-      /* Custom scrollbar - Elegant & Minimal */
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: var(--prospera-darkest); }
       ::-webkit-scrollbar-thumb { background: #313a4d; border-radius: 10px; }
@@ -45,10 +48,7 @@
         background-size: 24px 24px;
       }
 
-      ::selection {
-        background: var(--prospera-accent);
-        color: white;
-      }
+      ::selection { background: var(--prospera-accent); color: white; }
 
       input:-webkit-autofill,
       input:-webkit-autofill:hover, 
@@ -73,9 +73,9 @@
               }
             },
             borderRadius: {
-              '3xl': '1.5rem',
-              '4xl': '2rem',
-              '5xl': '3rem',
+              '3xl': '1.1rem',
+              '4xl': '1.5rem',
+              '5xl': '2rem',
             },
             animation: {
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
