@@ -15,7 +15,7 @@ interface DashboardCardProps {
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, subtitle, icon: Icon, trend, className = "" }) => {
   return (
-    <div className={`group p-4 rounded-[1.8rem] bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 shadow-xl transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-prospera-accent/5 relative overflow-hidden ${className}`}>
+    <div className={`group p-5 rounded-2xl bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 shadow-xl transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-prospera-accent/5 relative overflow-hidden ${className}`}>
       {/* Background Accent Glow */}
       <div className="absolute -top-10 -right-10 w-24 h-24 bg-prospera-accent/5 rounded-full blur-3xl group-hover:bg-prospera-accent/10 transition-all duration-500" />
       
@@ -39,7 +39,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, subtitle, i
           )}
         </div>
         
-        <div className="p-2.5 bg-gray-50 dark:bg-prospera-darkest/50 border border-gray-100 dark:border-white/5 rounded-lg text-prospera-accent shadow-inner group-hover:bg-prospera-accent group-hover:text-white transition-all duration-300">
+        <div className="p-2.5 bg-gray-50 dark:bg-prospera-darkest/50 border border-gray-100 dark:border-white/5 rounded-xl text-prospera-accent shadow-inner group-hover:bg-prospera-accent group-hover:text-white transition-all duration-300">
           <Icon className="w-4 h-4" />
         </div>
       </div>
