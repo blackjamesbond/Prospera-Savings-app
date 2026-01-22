@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Target, ArrowRight, Shield, User as UserIcon, Settings, Globe, Search, ChevronDown, Check, Loader2, Key } from 'lucide-react';
+import { Target, ArrowRight, Shield, User as UserIcon, Settings, Globe, Search, ChevronDown, Check, Loader2, Key, ShieldAlert } from 'lucide-react';
 import { UserRole } from '../types.ts';
 import { useAppContext } from '../context/AppContext.tsx';
 
@@ -10,7 +10,7 @@ interface AuthScreenProps {
 }
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' }) => {
-  const { groups, createGroup, login } = useAppContext();
+  const { groups, createGroup, login, showToast } = useAppContext();
   const [authMode, setAuthMode] = useState<'LOGIN' | 'FOUND' | 'JOIN'>(initialMode);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -40,13 +40,24 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
         login(email, UserRole.USER, selectedGroup);
         onLogin(UserRole.USER);
       } else {
-        const role = email.toLowerCase().includes('admin') ? UserRole.ADMIN : UserRole.USER;
-        const targetGroup = selectedGroup || (groups.length > 0 ? groups[0].id : '');
-        login(email, role, targetGroup);
-        onLogin(role);
+        // LOGIN mode: Strict membership check
+        try {
+          const role = email.toLowerCase().includes('admin') ? UserRole.ADMIN : UserRole.USER;
+          const targetGroup = selectedGroup || (groups.length > 0 ? groups[0].id : '');
+          login(email, role, targetGroup);
+          onLogin(role);
+        } catch (err: any) {
+          if (err.message === "MEMBER_NOT_FOUND") {
+            showToast("Invalid user, sign up with the circle first.", "error");
+            setAuthMode('JOIN'); // Redirect to Join form
+          } else {
+            showToast("Authentication protocol failed.", "error");
+          }
+        }
       }
     } catch (error) {
       console.error('Auth failure:', error);
+      showToast("Critical system error during authentication.", "error");
     } finally {
       setIsProcessing(false);
     }

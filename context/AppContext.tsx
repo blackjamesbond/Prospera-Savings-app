@@ -10,6 +10,14 @@ export interface Group {
   creationDate: string;
 }
 
+interface DashboardConfig {
+  showAnalytics: boolean;
+  showLogs: boolean;
+  showTarget: boolean;
+  showRecentTransactions: boolean;
+  showQuickActions: boolean;
+}
+
 interface AppPreferences {
   biometricsEnabled: boolean;
   notificationsEnabled: boolean;
@@ -30,6 +38,7 @@ interface AppPreferences {
   failedAttempts: number;
   isBlocked: boolean;
   resetAuthorized: boolean;
+  dashboardConfig: DashboardConfig;
 }
 
 interface ToastState {
@@ -73,7 +82,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY = 'prospera_v3_state';
 
-const defaultPreferences: AppPreferences = {
+// Factory to prevent object reference sharing between user sessions
+const getInitialPreferences = (): AppPreferences => ({
   biometricsEnabled: true,
   notificationsEnabled: true,
   emailNotifications: true,
@@ -91,8 +101,15 @@ const defaultPreferences: AppPreferences = {
   setupComplete: false,
   failedAttempts: 0,
   isBlocked: false,
-  resetAuthorized: false
-};
+  resetAuthorized: false,
+  dashboardConfig: {
+    showAnalytics: true,
+    showLogs: true,
+    showTarget: true,
+    showRecentTransactions: true,
+    showQuickActions: true
+  }
+});
 
 export const AVATAR_SILHOUETTES = {
   male: "https://api.dicebear.com/7.x/micah/svg?seed=Felix&backgroundColor=f1f5f9",
@@ -134,15 +151,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   });
 
-  const [preferences, setPreferences] = useState<AppPreferences>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_preferences`);
-    return saved ? JSON.parse(saved) : defaultPreferences;
-  });
-
+  const [preferences, setPreferences] = useState<AppPreferences>(getInitialPreferences());
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<ToastState>({ message: '', type: 'info', visible: false });
 
+  // Persistence Sync
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_groups`, JSON.stringify(groups));
     localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(users));
@@ -150,8 +164,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem(`${STORAGE_KEY}_target`, JSON.stringify(target));
     localStorage.setItem(`${STORAGE_KEY}_activeGroupId`, activeGroupId || '');
     localStorage.setItem(`${STORAGE_KEY}_currentUser`, JSON.stringify(currentUser));
-    localStorage.setItem(`${STORAGE_KEY}_preferences`, JSON.stringify(preferences));
-  }, [groups, users, transactions, target, activeGroupId, currentUser, preferences]);
+  }, [groups, users, transactions, target, activeGroupId, currentUser]);
+
+  // Preference Switch Logic: Scoped strictly to USER ID
+  useEffect(() => {
+    if (currentUser) {
+      const savedPrefs = localStorage.getItem(`${STORAGE_KEY}_prefs_${currentUser.id}`);
+      if (savedPrefs) {
+        setPreferences(JSON.parse(savedPrefs));
+      } else {
+        const freshDefaults = getInitialPreferences();
+        setPreferences({ ...freshDefaults, groupName: currentUser.groupName || 'Prospera Vault' });
+      }
+    } else {
+      setPreferences(getInitialPreferences());
+    }
+  }, [currentUser?.id]);
+
+  // Preference Persistence: Scoped to USER ID
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`${STORAGE_KEY}_prefs_${currentUser.id}`, JSON.stringify(preferences));
+    }
+  }, [preferences, currentUser?.id]);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
     setToast({ message, type, visible: true });
@@ -166,7 +201,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const groupId = groupName.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).substr(2, 4);
     const adminId = 'admin-' + Math.random().toString(36).substr(2, 5);
     const newGroup: Group = { id: groupId, name: groupName, currency, adminId, creationDate: new Date().toISOString() };
-    const adminUser: User = { id: adminId, name: adminName, email, role: UserRole.ADMIN, status: UserStatus.ACTIVE, rank: 0, groupName, totalContributed: 0, gender: 'male' };
+    const adminUser: User = { 
+      id: adminId, 
+      name: adminName, 
+      email, 
+      role: UserRole.ADMIN, 
+      status: UserStatus.ACTIVE, 
+      rank: 0, 
+      groupName, 
+      groupId, // Critical link
+      totalContributed: 0, 
+      gender: 'male' 
+    };
     setGroups(prev => [...prev, newGroup]);
     setUsers(prev => [...prev, adminUser]);
     return newGroup;
@@ -175,8 +221,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const login = (email: string, role: UserRole, groupId: string, name?: string, groupOverride?: Group) => {
     const group = groups.find(g => g.id === groupId) || groupOverride;
     if (!group) return;
-    setActiveGroupId(groupId);
-    const existingUser = users.find(u => u.email === email);
+
+    // Strict membership check for LOGIN mode
+    const existingUser = users.find(u => u.email === email && u.groupId === groupId);
+    
+    // If not name or groupOverride is provided, this is a standard login attempt
+    if (!existingUser && !name && !groupOverride) {
+      throw new Error("MEMBER_NOT_FOUND");
+    }
+
     const userData: User = existingUser || {
       id: role === UserRole.ADMIN ? group.adminId : 'user-' + Math.random().toString(36).substr(2, 5),
       name: name || email.split('@')[0],
@@ -185,15 +238,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       status: role === UserRole.ADMIN ? UserStatus.ACTIVE : UserStatus.PENDING,
       rank: role === UserRole.ADMIN ? 0 : 1,
       groupName: group.name,
+      groupId: group.id,
       totalContributed: 0,
       gender: 'male'
     };
+
     if (!existingUser) {
       setUsers(prev => [...prev, userData]);
       addNotification({ title: 'New Access Request', message: `${userData.name} is requesting ingress to the vault.`, type: 'info', recipientId: group.adminId });
     }
+    
+    setActiveGroupId(groupId);
     setCurrentUser(userData);
-    setPreferences(prev => ({ ...prev, currency: group.currency, groupName: group.name, setupComplete: true }));
   };
 
   const logout = () => { setActiveGroupId(null); setCurrentUser(null); };

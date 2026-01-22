@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { Settings, Shield, Bell, User as UserIcon, Palette, Globe, Lock, ChevronRight, Save, ArrowLeft, Eye, EyeOff, Code2, Camera, Info, Sun, Sparkles, Check, Trash, Key, Timer, Smartphone, Layout, Type } from 'lucide-react';
+// Added missing 'Target' to imports from lucide-react
+import { Settings, Shield, Bell, User as UserIcon, Palette, Globe, Lock, ChevronRight, Save, ArrowLeft, Eye, EyeOff, Code2, Camera, Info, Sun, Sparkles, Check, Trash, Key, Timer, Smartphone, Layout, Type, ToggleRight, Target } from 'lucide-react';
 import { useAppContext, AVATAR_SILHOUETTES } from '../context/AppContext.tsx';
 import { UserRole } from '../types.ts';
 
@@ -14,18 +15,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   
   const [profileForm, setProfileForm] = useState({ 
-    name: currentUser.name, 
-    email: currentUser.email,
-    profileImage: currentUser.profileImage || '',
-    gender: currentUser.gender || 'male'
+    name: currentUser?.name || '', 
+    email: currentUser?.email || '',
+    profileImage: currentUser?.profileImage || '',
+    gender: currentUser?.gender || 'male'
   });
   const [pinForm, setPinForm] = useState(preferences.appPin);
 
-  const isAdmin = currentUser.role === UserRole.ADMIN;
+  const isAdmin = currentUser?.role === UserRole.ADMIN;
 
   const sections = [
     { id: 'profile', name: 'Profile Dossier', icon: UserIcon, desc: 'Manage your personal group identity' },
     { id: 'security', name: 'Security Protocol', icon: Shield, desc: 'PIN codes and auto-lock heuristics' },
+    { id: 'dashboard', name: 'Dashboard Layout', icon: ToggleRight, desc: 'Personalize your interface modules' },
     ...(isAdmin ? [{ id: 'branding', name: 'Global Branding', icon: Layout, desc: 'Control group UI colors and theme' }] : []),
     { id: 'appearance', name: 'Display Preferences', icon: Palette, desc: 'Switch modes and local UI tweaks' },
     { id: 'about', name: 'System Info', icon: Info, desc: 'Version data and technical logs' },
@@ -53,6 +55,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
     updatePreferences({ appPin: pinForm });
     showToast('Vault security updated.', 'success');
     setActiveSection(null);
+  };
+
+  const toggleDashboardModule = (key: keyof typeof preferences.dashboardConfig) => {
+    updatePreferences({
+      dashboardConfig: {
+        ...preferences.dashboardConfig,
+        [key]: !preferences.dashboardConfig[key]
+      }
+    });
   };
 
   const renderActiveSection = () => {
@@ -139,6 +150,41 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
             <button onClick={handleSecuritySave} className="w-full py-5 bg-prospera-darkest text-white border border-white/10 font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-2xl transition-all hover:bg-black">Finalize Security State</button>
           </div>
         );
+      case 'dashboard':
+        return (
+          <div className="space-y-8 animate-in slide-in-from-right duration-400">
+            <h3 className="text-2xl font-black dark:text-white text-gray-900 flex items-center gap-3">
+              <ToggleRight className="text-prospera-accent w-6 h-6" />
+              Interface Configuration
+            </h3>
+            <p className="text-xs text-prospera-gray font-bold uppercase tracking-widest">Toggle visibility of specific dashboard modules.</p>
+            
+            <div className="space-y-4">
+              {[
+                { id: 'showAnalytics', name: isAdmin ? 'Distribution Analytics' : 'Performance Insights', icon: Layout },
+                { id: 'showLogs', name: isAdmin ? 'Live Governance Logs' : 'System Activity Feed', icon: Bell },
+                { id: 'showTarget', name: 'Active Objective Module', icon: Target },
+                { id: 'showRecentTransactions', name: 'Recent Ledger Entries', icon: ArrowLeft },
+              ].map(module => (
+                <div key={module.id} className={subCardClasses}>
+                  <div className="flex items-center gap-4">
+                    <module.icon className="w-5 h-5 text-prospera-accent" />
+                    <div>
+                      <p className="font-bold text-sm dark:text-white text-gray-900">{module.name}</p>
+                      <p className="text-[9px] text-prospera-gray uppercase tracking-widest font-black">Visibility Protocol</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => toggleDashboardModule(module.id as keyof typeof preferences.dashboardConfig)} 
+                    className={`w-14 h-7 rounded-full relative transition-all ${preferences.dashboardConfig[module.id as keyof typeof preferences.dashboardConfig] ? 'bg-prospera-accent shadow-[0_0_15px_var(--prospera-accent)]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                  >
+                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${preferences.dashboardConfig[module.id as keyof typeof preferences.dashboardConfig] ? 'left-8' : 'left-1'}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
       case 'branding':
         return (
           <div className="space-y-10 animate-in slide-in-from-right duration-400">
@@ -181,7 +227,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
                  <Sparkles className="w-8 h-8 text-white" />
                </div>
                <p className="text-xs text-prospera-gray font-bold leading-relaxed uppercase tracking-wide">
-                 NOTICE: Committing a global accent change affects the UI environment of <span className="text-prospera-accent">{currentUser.groupName}</span> across all member terminals. Propagating now...
+                 NOTICE: Committing a global accent change affects the UI environment of <span className="text-prospera-accent">{currentUser?.groupName}</span> across all member terminals. Propagating now...
                </p>
             </div>
           </div>
@@ -191,7 +237,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
           <div className="space-y-12 animate-in slide-in-from-right duration-400">
             <h3 className="text-2xl font-black dark:text-white text-gray-900 tracking-tight">Terminal Environment</h3>
             
-            {/* Theme Toggle */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <button 
                 onClick={() => updatePreferences({ theme: 'dark' })} 
@@ -215,7 +260,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
               </button>
             </div>
 
-            {/* Typography Scaling */}
             <div className="space-y-6">
                <div className="flex items-center gap-3">
                  <Type className="w-5 h-5 text-prospera-accent" />

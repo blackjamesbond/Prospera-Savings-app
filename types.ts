@@ -24,6 +24,7 @@ export interface User {
   status: UserStatus;
   rank: number;
   groupName?: string;
+  groupId?: string; // Strictly track which circle the user belongs to
   totalContributed: number;
   profileImage?: string;
   gender?: 'male' | 'female' | 'other';
