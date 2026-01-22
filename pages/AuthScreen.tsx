@@ -22,7 +22,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
   const [adminName, setAdminName] = useState('');
   const [currency, setCurrency] = useState('KES');
 
-  // React to initialMode changes if the component is re-mounted
   useEffect(() => {
     setAuthMode(initialMode);
   }, [initialMode]);
@@ -40,7 +39,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
         login(email, UserRole.USER, selectedGroup);
         onLogin(UserRole.USER);
       } else {
-        // LOGIN mode: Strict membership check
         try {
           const role = email.toLowerCase().includes('admin') ? UserRole.ADMIN : UserRole.USER;
           const targetGroup = selectedGroup || (groups.length > 0 ? groups[0].id : '');
@@ -48,16 +46,16 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
           onLogin(role);
         } catch (err: any) {
           if (err.message === "MEMBER_NOT_FOUND") {
-            showToast("Invalid user, sign up with the circle first.", "error");
-            setAuthMode('JOIN'); // Redirect to Join form
+            showToast("User not found. Please join the group first.", "error");
+            setAuthMode('JOIN'); 
           } else {
-            showToast("Authentication protocol failed.", "error");
+            showToast("Login failed. Check your details.", "error");
           }
         }
       }
     } catch (error) {
       console.error('Auth failure:', error);
-      showToast("Critical system error during authentication.", "error");
+      showToast("There was a system error. Try again.", "error");
     } finally {
       setIsProcessing(false);
     }
@@ -74,8 +72,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
           <div className="inline-flex items-center justify-center w-20 h-20 bg-prospera-accent rounded-[1.8rem] mb-8 shadow-2xl shadow-prospera-accent/40 ring-4 ring-prospera-accent/20">
             <Target className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-3 text-white">Prospera Vault</h1>
-          <p className="text-prospera-gray font-black uppercase tracking-[0.4em] text-[10px] opacity-70">Secured Intelligence Terminal</p>
+          <h1 className="text-4xl font-black tracking-tighter mb-3 text-white">Prospera</h1>
+          <p className="text-prospera-gray font-black uppercase tracking-[0.4em] text-[10px] opacity-70">Safe Money App</p>
         </div>
 
         <div className="bg-prospera-dark border border-white/10 p-10 rounded-[3rem] shadow-2xl shadow-black/50 relative overflow-hidden">
@@ -91,7 +89,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
                 onClick={() => setAuthMode(mode)}
                 className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all duration-300 ${authMode === mode ? 'bg-prospera-accent text-white shadow-xl shadow-prospera-accent/20' : 'text-prospera-gray hover:text-white'}`}
                >
-                 {mode === 'LOGIN' ? 'Access' : mode === 'JOIN' ? 'Join' : 'Found'}
+                 {mode === 'LOGIN' ? 'Login' : mode === 'JOIN' ? 'Join' : 'Create'}
                </button>
              ))}
           </div>
@@ -100,12 +98,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
             {authMode === 'FOUND' && (
               <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Circle Identifier (Name)</label>
-                  <input required type="text" value={foundName} onChange={e => setFoundName(e.target.value)} className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm shadow-inner" placeholder="e.g. Phoenix Vanguard" />
+                  <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Group Name</label>
+                  <input required type="text" value={foundName} onChange={e => setFoundName(e.target.value)} className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm shadow-inner" placeholder="e.g. My Savings Group" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Lead Founder</label>
+                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Your Full Name</label>
                     <input required type="text" value={adminName} onChange={e => setAdminName(e.target.value)} className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm shadow-inner" placeholder="Full Name" />
                   </div>
                   <div className="space-y-2">
@@ -125,7 +123,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
 
             {(authMode === 'JOIN' || authMode === 'LOGIN') && (
               <div className="space-y-2 animate-in slide-in-from-top-4 duration-500">
-                <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Target Infrastructure (Circle)</label>
+                <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Pick Your Group</label>
                 <div className="relative">
                   <select 
                     required 
@@ -133,7 +131,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
                     onChange={e => setSelectedGroup(e.target.value)}
                     className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm appearance-none shadow-inner cursor-pointer"
                   >
-                    <option value="" disabled>Select Target Protocol...</option>
+                    <option value="" disabled>Choose a group...</option>
                     {groups.map(g => (
                       <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
@@ -145,12 +143,12 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Authorized Email</label>
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm shadow-inner" placeholder="name@vault.com" />
+                <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Email Address</label>
+                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm shadow-inner" placeholder="name@email.com" />
               </div>
               
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Encryption Key (Password)</label>
+                <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1 text-center block">Password</label>
                 <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-6 py-5 bg-prospera-darkest/50 border border-white/5 rounded-2xl focus:border-prospera-accent outline-none text-white font-bold text-sm shadow-inner" placeholder="••••••••" />
               </div>
             </div>
@@ -164,7 +162,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  {authMode === 'FOUND' ? 'Initialize Circle' : authMode === 'JOIN' ? 'Request Ingress' : 'Verify Identity'}
+                  {authMode === 'FOUND' ? 'Create Group' : authMode === 'JOIN' ? 'Join Group' : 'Login'}
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -174,7 +172,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, initialMode = 'LOGIN' 
           <div className="mt-12 pt-10 border-t border-white/5 text-center">
              <div className="inline-flex items-center gap-4 px-6 py-2.5 bg-white/5 rounded-full border border-white/5 shadow-inner">
                 <Shield className="w-4 h-4 text-prospera-accent" />
-                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-prospera-gray">AES-256 Protocol Active</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-prospera-gray">Your money is safe</span>
              </div>
           </div>
         </div>
