@@ -111,23 +111,23 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
 
   return (
     <div className={`flex min-h-screen ${isDarkMode ? 'bg-prospera-darkest text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <aside className={`hidden md:flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-56' : 'w-20'} ${isDarkMode ? 'bg-prospera-dark' : 'bg-white border-r border-gray-200'} sticky top-0 h-screen z-40 shadow-2xl shadow-black/10`}>
-        <div className="p-6 flex items-center justify-between">
+      <aside className={`hidden md:flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-52' : 'w-18'} ${isDarkMode ? 'bg-prospera-dark' : 'bg-white border-r border-gray-200'} sticky top-0 h-screen z-40 shadow-2xl shadow-black/10`}>
+        <div className="p-5 flex items-center justify-between">
           {isSidebarOpen ? (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-prospera-accent rounded-lg flex items-center justify-center shadow-lg shadow-prospera-accent/20">
-                <Target className="text-white w-5 h-5" />
+              <div className="w-7 h-7 bg-prospera-accent rounded-lg flex items-center justify-center shadow-lg shadow-prospera-accent/20">
+                <Target className="text-white w-4 h-4" />
               </div>
-              <span className="font-bold text-lg tracking-tight text-prospera-accent">Prospera</span>
+              <span className="font-bold text-base tracking-tight text-prospera-accent">Prospera</span>
             </div>
           ) : (
-            <div className="w-8 h-8 bg-prospera-accent rounded-lg flex items-center justify-center mx-auto shadow-lg shadow-prospera-accent/20">
-              <Target className="text-white w-5 h-5" />
+            <div className="w-7 h-7 bg-prospera-accent rounded-lg flex items-center justify-center mx-auto shadow-lg shadow-prospera-accent/20">
+              <Target className="text-white w-4 h-4" />
             </div>
           )}
         </div>
 
-        <nav className="flex-1 mt-4 px-3 space-y-1 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 mt-2 px-3 space-y-0.5 overflow-y-auto no-scrollbar">
           {links.map((link) => (
             <button
               key={link.path}
@@ -138,8 +138,8 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
                 : isDarkMode ? 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-400' : 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-500'
               } ${!isSidebarOpen && 'justify-center'}`}
             >
-              <link.icon className="w-4.5 h-4.5" />
-              {isSidebarOpen && <span className="ml-3 text-xs">{link.name}</span>}
+              <link.icon className="w-4 h-4" />
+              {isSidebarOpen && <span className="ml-3 text-[11px] uppercase tracking-wider font-bold">{link.name}</span>}
             </button>
           ))}
         </nav>
@@ -147,10 +147,10 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
         <div className="p-4 border-t dark:border-gray-700/10 border-gray-200">
           <button 
             onClick={onLogout}
-            className={`flex items-center w-full p-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors ${!isSidebarOpen && 'justify-center'}`}
+            className={`flex items-center w-full p-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors ${!isSidebarOpen && 'justify-center'}`}
           >
-            <LogOut className="w-4.5 h-4.5" />
-            {isSidebarOpen && <span className="ml-3 font-bold text-xs">Logout</span>}
+            <LogOut className="w-4 h-4" />
+            {isSidebarOpen && <span className="ml-3 font-bold text-[11px] uppercase tracking-wider">Logout</span>}
           </button>
           
           <button 
@@ -162,20 +162,20 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-0">
-        <header className={`sticky top-0 z-30 flex items-center justify-between px-4 md:px-6 py-3 ${isDarkMode ? 'bg-prospera-darkest/80 backdrop-blur-md border-b border-white/5' : 'bg-white/80 backdrop-blur-md border-b border-gray-200'}`}>
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className={`sticky top-0 z-30 flex items-center justify-between px-4 md:px-6 py-2.5 ${isDarkMode ? 'bg-prospera-darkest/80 backdrop-blur-md border-b border-white/5' : 'bg-white/80 backdrop-blur-md border-b border-gray-200'}`}>
           <div className="flex items-center gap-4">
             <button className="md:hidden p-2 dark:text-white text-gray-900" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold dark:text-white text-gray-900">
+                <h1 className="text-sm font-bold dark:text-white text-gray-900 leading-none">
                   {getGreeting()}, <span className="text-prospera-accent">{currentUser.name}</span>
                 </h1>
-                {role === UserRole.ADMIN && <ShieldCheck className="w-3.5 h-3.5 text-prospera-accent" />}
+                {role === UserRole.ADMIN && <ShieldCheck className="w-3 h-3 text-prospera-accent" />}
               </div>
-              <p className="text-[8px] text-prospera-gray uppercase tracking-widest font-black">
+              <p className="text-[7px] text-prospera-gray uppercase tracking-widest font-black mt-1">
                 {role === UserRole.ADMIN ? 'Lead Founder' : 'Member'} • {preferences.groupName}
               </p>
             </div>
@@ -189,25 +189,25 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
               </div>
             )}
             
-            <button onClick={toggleDarkMode} className="p-1.5 rounded-full hover:bg-gray-700/20 transition-colors dark:text-white text-gray-900">
-              {isDarkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+            <button onClick={toggleDarkMode} className="p-1.5 rounded-lg hover:bg-gray-700/20 transition-colors dark:text-white text-gray-900">
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="p-1.5 rounded-full hover:bg-gray-700/20 transition-colors relative dark:text-white text-gray-900"
+                className="p-1.5 rounded-lg hover:bg-gray-700/20 transition-colors relative dark:text-white text-gray-900"
               >
-                <Bell className="w-4.5 h-4.5" />
+                <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 dark:border-prospera-darkest border-white"></span>
                 )}
               </button>
               
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-64 sm:w-72 dark:bg-prospera-dark bg-white border dark:border-white/10 border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 w-64 sm:w-72 dark:bg-prospera-dark bg-white border dark:border-white/10 border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-3 border-b dark:border-white/5 border-gray-100 flex items-center justify-between">
-                    <h3 className="font-bold text-xs dark:text-white text-gray-900">Notifications</h3>
-                    <span className="text-[8px] bg-prospera-accent/20 text-prospera-accent px-1.5 py-0.5 rounded-full font-bold uppercase">{unreadCount} NEW</span>
+                    <h3 className="font-bold text-[10px] uppercase tracking-wider dark:text-white text-gray-900">Notifications</h3>
+                    <span className="text-[7px] bg-prospera-accent/20 text-prospera-accent px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest">{unreadCount} NEW</span>
                   </div>
                   <div className="max-h-64 overflow-y-auto no-scrollbar">
                     {personalizedNotifications.length > 0 ? (
@@ -217,13 +217,13 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
                           onClick={() => markNotificationRead(n.id)}
                           className={`p-3 border-b dark:border-white/5 border-gray-50 cursor-pointer hover:bg-prospera-accent/5 transition-colors ${!n.read ? (isDarkMode ? 'bg-prospera-accent/5' : 'bg-gray-50') : ''}`}
                         >
-                          <p className={`text-[11px] ${!n.read ? 'font-bold dark:text-white text-gray-900' : 'font-medium text-gray-400'}`}>{n.title}</p>
-                          <p className="text-[10px] text-prospera-gray mt-0.5 line-clamp-2">{n.message}</p>
-                          <p className="text-[8px] text-prospera-gray mt-1.5 font-bold uppercase">{n.date}</p>
+                          <p className={`text-[10px] ${!n.read ? 'font-bold dark:text-white text-gray-900' : 'font-medium text-gray-400'}`}>{n.title}</p>
+                          <p className="text-[9px] text-prospera-gray mt-0.5 line-clamp-2">{n.message}</p>
+                          <p className="text-[7px] text-prospera-gray mt-1.5 font-bold uppercase tracking-widest">{n.date}</p>
                         </div>
                       ))
                     ) : (
-                      <div className="p-6 text-center text-prospera-gray text-xs">
+                      <div className="p-6 text-center text-prospera-gray text-[10px] font-bold uppercase tracking-widest">
                         No notifications yet.
                       </div>
                     )}
@@ -232,7 +232,7 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
               )}
             </div>
             <div className="flex items-center gap-2 ml-1 pl-1 sm:pl-3 border-l dark:border-white/10 border-gray-200">
-              <img src={avatarSrc} alt="Avatar" className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border-2 border-prospera-accent shadow-lg object-cover" />
+              <img src={avatarSrc} alt="Avatar" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 border-prospera-accent shadow-lg object-cover" />
             </div>
           </div>
         </header>
