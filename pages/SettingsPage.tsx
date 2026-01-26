@@ -1,6 +1,7 @@
 
-import React, { useState, useRef } from 'react';
-import { Settings, Shield, Bell, User as UserIcon, Palette, Globe, Lock, ChevronRight, Save, ArrowLeft, Eye, EyeOff, Code2, Camera, Info, Sun, Sparkles, Check, Trash, Key, Timer, Smartphone, Layout, Type, ToggleRight, Target, Users, Cpu } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+/* Added ShieldCheck to imports from lucide-react */
+import { Settings, Shield, Bell, User as UserIcon, Palette, Globe, Lock, ChevronRight, Save, ArrowLeft, Eye, EyeOff, Code2, Camera, Info, Sun, Sparkles, Check, Trash, Key, Timer, Smartphone, Layout, Type, ToggleRight, Target, Users, Cpu, Github, Linkedin, Twitter, Mail, ExternalLink, Briefcase, UserCheck, ShieldCheck } from 'lucide-react';
 import { useAppContext, AVATAR_SILHOUETTES } from '../context/AppContext.tsx';
 import { UserRole } from '../types.ts';
 
@@ -8,9 +9,26 @@ interface SettingsPageProps {
   onLock: () => void;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  profession: string;
+  bio: string;
+  seed: string;
+  socials: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+    email?: string;
+  };
+}
+
 const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
   const { preferences, updatePreferences, currentUser, updateCurrentUser, showToast } = useAppContext();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [aboutView, setAboutView] = useState<'metadata' | 'team' | 'detail'>('metadata');
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   
   const [profileForm, setProfileForm] = useState({ 
@@ -23,13 +41,70 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
 
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
+  const teamData: TeamMember[] = useMemo(() => [
+    {
+      id: 'dominic',
+      name: 'Dominic Gekonde',
+      role: 'Lead Engineer',
+      profession: 'Senior Full Stack & AI Architect',
+      bio: 'Architect of the Prospera core system. Dominic specializes in building high-performance fintech applications with a focus on localized financial synchronization and autonomous security protocols.',
+      seed: 'Felix',
+      socials: { github: 'https://github.com', linkedin: 'https://linkedin.com', email: 'dominic@techforge.africa' }
+    },
+    {
+      id: 'barrack',
+      name: 'Barrack Rabuku',
+      role: 'Product Strategist',
+      profession: 'Fintech Analyst & Strategist',
+      bio: 'Expert in group financial dynamics and emerging markets. Barrack leads the roadmap for TechForge Africa, ensuring Prospera aligns with the practical needs of modern African savings circles.',
+      seed: 'George',
+      socials: { linkedin: 'https://linkedin.com', twitter: 'https://twitter.com' }
+    },
+    {
+      id: 'machel',
+      name: 'Machel',
+      role: 'Security Ops',
+      profession: 'Cybersecurity Specialist',
+      bio: 'Guardian of the Vault. Machel manages the E2E encryption standards and penetration testing for the Prospera mainnet, maintaining military-grade integrity for all group dossiers.',
+      seed: 'Machel',
+      socials: { github: 'https://github.com', email: 'machel@techforge.africa' }
+    },
+    {
+      id: 'seline',
+      name: 'Seline',
+      role: 'UX Lead',
+      profession: 'Visual Architect & UX Researcher',
+      bio: 'Seline is the creative force behind Prospera’s high-fidelity terminal aesthetic. She bridges the gap between complex financial data and intuitive, high-performance user experiences.',
+      seed: 'Seline',
+      socials: { twitter: 'https://twitter.com', linkedin: 'https://linkedin.com' }
+    },
+    {
+      id: 'bodi',
+      name: 'Bodi',
+      role: 'Cloud Architect',
+      profession: 'Infrastructure & DevOps Engineer',
+      bio: 'Bodi ensures the 4ms mainnet latency. He manages the decentralized node infrastructure and automated scaling protocols that keep Prospera operational 24/7.',
+      seed: 'Bodi',
+      socials: { github: 'https://github.com', email: 'bodi@techforge.africa' }
+    },
+    {
+      id: 'karen',
+      name: 'Karen',
+      role: 'Data Scientist',
+      profession: 'Financial Modeling Expert',
+      bio: 'The logic behind the insights. Karen develops the heuristic modeling and predictive analytics used in the AI Insights engine to forecast group liquidity and growth.',
+      seed: 'Karen',
+      socials: { linkedin: 'https://linkedin.com', github: 'https://github.com' }
+    }
+  ], []);
+
   const sections = [
     { id: 'profile', name: 'Profile Dossier', icon: UserIcon, desc: 'Manage your personal group identity' },
     { id: 'security', name: 'Security Protocol', icon: Shield, desc: 'PIN codes and auto-lock heuristics' },
     { id: 'dashboard', name: 'Dashboard Layout', icon: ToggleRight, desc: 'Personalize your interface modules' },
     ...(isAdmin ? [{ id: 'branding', name: 'Global Branding', icon: Layout, desc: 'Control group UI colors and theme' }] : []),
     { id: 'appearance', name: 'Display Preferences', icon: Palette, desc: 'Switch modes and local UI tweaks' },
-    { id: 'about', name: 'System Info', icon: Info, desc: 'Version data and technical logs' },
+    { id: 'about', name: 'System Info', icon: Info, desc: 'Version data and TechForge team' },
   ];
 
   const presets = [
@@ -281,72 +356,179 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
           </div>
         );
       case 'about':
-        const team = [
-          { name: 'Dominic Gekonde', role: 'Lead Engineer', seed: 'Felix' },
-          { name: 'Barrack Rabuku', role: 'Product Strategist', seed: 'George' },
-          { name: 'Machel', role: 'Security Ops', seed: 'Machel' },
-          { name: 'Seline', role: 'UX Lead', seed: 'Seline' },
-          { name: 'Bodi', role: 'Cloud Architect', seed: 'Bodi' },
-          { name: 'Karen', role: 'Data Scientist', seed: 'Karen' },
-        ];
-
-        return (
-          <div className="space-y-8 animate-in slide-in-from-right duration-400">
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-black dark:text-white text-gray-900 flex items-center gap-3 tracking-tight">
-                <Code2 className="text-prospera-accent w-6 h-6" />
-                Terminal Metadata
-              </h3>
-              <div className="px-3 py-1 bg-prospera-accent/10 border border-prospera-accent/20 rounded-lg">
-                <p className="text-[9px] font-black text-prospera-accent uppercase tracking-widest">TechForge Africa</p>
-              </div>
-            </div>
-
-            <div className="p-8 sm:p-12 bg-gray-50 dark:bg-prospera-darkest/80 rounded-[3rem] border border-gray-100 dark:border-white/5 space-y-10 terminal-grid relative">
-              <div className="space-y-2 text-center">
-                <h4 className="text-[10px] font-black text-prospera-gray uppercase tracking-[0.4em] mb-2">Developed By</h4>
-                <div className="flex items-center justify-center gap-3">
-                   <div className="p-2 bg-prospera-accent rounded-xl">
-                      <Cpu className="w-6 h-6 text-white" />
-                   </div>
-                   <h2 className="text-4xl font-black dark:text-white text-gray-900 tracking-tighter">TechForge Africa</h2>
+        if (aboutView === 'metadata') {
+          return (
+            <div className="space-y-8 animate-in slide-in-from-right duration-400">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-black dark:text-white text-gray-900 flex items-center gap-3 tracking-tight">
+                  <Code2 className="text-prospera-accent w-6 h-6" />
+                  Terminal Metadata
+                </h3>
+                <div className="px-3 py-1 bg-prospera-accent/10 border border-prospera-accent/20 rounded-lg">
+                  <p className="text-[9px] font-black text-prospera-accent uppercase tracking-widest">TechForge Africa</p>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 px-2">
-                   <Users className="w-4 h-4 text-prospera-accent" />
-                   <h5 className="text-[9px] font-black text-prospera-gray uppercase tracking-widest">Meet the Brains behind Prospera</h5>
+              <div className="p-8 sm:p-12 bg-gray-50 dark:bg-prospera-darkest/80 rounded-[3rem] border border-gray-100 dark:border-white/5 space-y-10 terminal-grid relative">
+                <div className="space-y-2 text-center">
+                  <h4 className="text-[10px] font-black text-prospera-gray uppercase tracking-[0.4em] mb-2">Developed By</h4>
+                  <div className="flex items-center justify-center gap-3">
+                     <div className="p-2 bg-prospera-accent rounded-xl">
+                        <Cpu className="w-6 h-6 text-white" />
+                     </div>
+                     <h2 className="text-4xl font-black dark:text-white text-gray-900 tracking-tighter">TechForge Africa</h2>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <button 
+                    onClick={() => setAboutView('team')}
+                    className="w-full flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-3xl group hover:bg-prospera-accent/5 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 bg-prospera-accent/10 rounded-xl flex items-center justify-center group-hover:bg-prospera-accent/20 transition-all">
+                          <Users className="w-6 h-6 text-prospera-accent" />
+                       </div>
+                       <div className="text-left">
+                          <h5 className="text-[11px] font-black dark:text-white text-gray-900 uppercase tracking-widest">Meet the Brains behind Prospera</h5>
+                          <p className="text-[9px] text-prospera-gray font-bold uppercase mt-1">Personnel Dossiers & Strategic Units</p>
+                       </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-prospera-gray group-hover:text-prospera-accent group-hover:translate-x-1 transition-all" />
+                  </button>
+                </div>
+
+                <div className="pt-10 border-t border-white/5 flex flex-col sm:flex-row justify-center gap-4 text-center">
+                   <span className="px-6 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-prospera-gray tracking-widest uppercase">Version 3.5.1-LTS</span>
+                   <span className="px-6 py-2.5 bg-prospera-accent/10 border border-prospera-accent/20 rounded-2xl text-[10px] font-black text-prospera-accent tracking-widest uppercase">Active Protocol Stable</span>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   {team.map((member, i) => (
-                     <div key={i} className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-prospera-accent/5 transition-colors group">
-                        <img 
-                          src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.seed}&backgroundColor=f1f5f9`} 
-                          alt={member.name} 
-                          className="w-12 h-12 rounded-xl border-2 border-prospera-accent/20 group-hover:border-prospera-accent transition-colors object-cover" 
-                        />
-                        <div className="min-w-0">
-                           <p className="text-[11px] font-black dark:text-white text-gray-900 truncate">{member.name}</p>
-                           <p className="text-[8px] font-black text-prospera-accent uppercase tracking-widest">{member.role}</p>
-                        </div>
-                     </div>
-                   ))}
+                <p className="text-[10px] text-prospera-gray font-medium max-w-sm mx-auto leading-relaxed text-center italic">
+                  This terminal environment is maintained and optimized by the TechForge Africa engineering collective.
+                </p>
+              </div>
+            </div>
+          );
+        } else if (aboutView === 'team') {
+          return (
+            <div className="space-y-8 animate-in slide-in-from-right duration-400">
+              <button 
+                onClick={() => setAboutView('metadata')}
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-prospera-gray hover:text-prospera-accent transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Personnel Directory
+              </button>
+
+              <div className="space-y-4">
+                <h3 className="text-3xl font-black dark:text-white text-gray-900 tracking-tighter">Strategic Assets</h3>
+                <p className="text-xs text-prospera-gray font-bold uppercase tracking-widest">TechForge Africa Engineering Core</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {teamData.map((member) => (
+                  <button 
+                    key={member.id}
+                    onClick={() => { setSelectedMember(member); setAboutView('detail'); }}
+                    className="flex items-center gap-4 p-5 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-3xl hover:bg-prospera-accent/5 transition-all text-left group"
+                  >
+                    <img 
+                      src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.seed}&backgroundColor=f1f5f9`} 
+                      alt={member.name} 
+                      className="w-16 h-16 rounded-2xl border-2 border-prospera-accent/20 group-hover:border-prospera-accent transition-all object-cover" 
+                    />
+                    <div className="flex-1 min-w-0">
+                       <p className="text-[12px] font-black dark:text-white text-gray-900 truncate">{member.name}</p>
+                       <p className="text-[9px] font-black text-prospera-accent uppercase tracking-widest mt-0.5">{member.role}</p>
+                       <p className="text-[8px] text-prospera-gray font-bold uppercase tracking-widest mt-2 flex items-center gap-1.5 opacity-60">
+                         <ChevronRight className="w-2.5 h-2.5" /> View Dossier
+                       </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        } else if (aboutView === 'detail' && selectedMember) {
+          return (
+            <div className="space-y-10 animate-in zoom-in-95 duration-400">
+               <button 
+                onClick={() => setAboutView('team')}
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-prospera-gray hover:text-prospera-accent transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Directory
+              </button>
+
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
+                <div className="relative">
+                  <div className="w-40 h-40 rounded-[3rem] border-4 border-prospera-accent/20 p-1 bg-white dark:bg-prospera-darkest shadow-2xl overflow-hidden">
+                    <img src={`https://api.dicebear.com/7.x/micah/svg?seed=${selectedMember.seed}&backgroundColor=f1f5f9`} alt={selectedMember.name} className="w-full h-full rounded-[2.5rem] object-cover" />
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 p-3 bg-prospera-accent text-white rounded-2xl shadow-xl">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="flex-1 text-center sm:text-left space-y-4">
+                  <div className="space-y-1">
+                    <h2 className="text-4xl font-black dark:text-white text-gray-900 tracking-tighter">{selectedMember.name}</h2>
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-2">
+                       <span className="px-3 py-1 bg-prospera-accent/10 border border-prospera-accent/20 rounded-lg text-[9px] font-black text-prospera-accent uppercase tracking-widest">{selectedMember.role}</span>
+                       <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[9px] font-black text-blue-400 uppercase tracking-widest">{selectedMember.profession}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex justify-center sm:justify-start gap-4">
+                    {selectedMember.socials.github && (
+                      <a href={selectedMember.socials.github} target="_blank" rel="noreferrer" className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl text-prospera-gray hover:text-prospera-accent transition-all"><Github className="w-5 h-5" /></a>
+                    )}
+                    {selectedMember.socials.linkedin && (
+                      <a href={selectedMember.socials.linkedin} target="_blank" rel="noreferrer" className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl text-prospera-gray hover:text-prospera-accent transition-all"><Linkedin className="w-5 h-5" /></a>
+                    )}
+                    {selectedMember.socials.twitter && (
+                      <a href={selectedMember.socials.twitter} target="_blank" rel="noreferrer" className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl text-prospera-gray hover:text-prospera-accent transition-all"><Twitter className="w-5 h-5" /></a>
+                    )}
+                    {selectedMember.socials.email && (
+                      <a href={`mailto:${selectedMember.socials.email}`} className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl text-prospera-gray hover:text-prospera-accent transition-all"><Mail className="w-5 h-5" /></a>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-10 border-t border-white/5 flex flex-col sm:flex-row justify-center gap-4 text-center">
-                 <span className="px-6 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-prospera-gray tracking-widest uppercase">Version 3.5.1-LTS</span>
-                 <span className="px-6 py-2.5 bg-prospera-accent/10 border border-prospera-accent/20 rounded-2xl text-[10px] font-black text-prospera-accent tracking-widest uppercase">Active Protocol Stable</span>
+              <div className="space-y-8">
+                 <div className="space-y-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-prospera-gray flex items-center gap-2"><Info className="w-3 h-3" /> Personnel Bio</h4>
+                    <p className="text-sm leading-relaxed dark:text-gray-300 text-gray-600 font-medium bg-gray-50 dark:bg-white/[0.02] p-6 rounded-3xl border dark:border-white/5 border-gray-100">
+                      {selectedMember.bio}
+                    </p>
+                 </div>
+
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-6 bg-prospera-accent/5 border border-prospera-accent/10 rounded-3xl space-y-2">
+                       <Briefcase className="w-5 h-5 text-prospera-accent mb-2" />
+                       <p className="text-[9px] font-black text-prospera-gray uppercase tracking-widest">Primary Objective</p>
+                       <p className="text-sm font-black dark:text-white text-gray-900">TechForge Mainnet Growth</p>
+                    </div>
+                    <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-3xl space-y-2">
+                       {/* Fix: Added ShieldCheck to imports to resolve 'Cannot find name ShieldCheck' on line 511 */}
+                       <ShieldCheck className="w-5 h-5 text-blue-400 mb-2" />
+                       <p className="text-[9px] font-black text-prospera-gray uppercase tracking-widest">Clearance Level</p>
+                       <p className="text-sm font-black dark:text-white text-gray-900">L4 - System Sovereign</p>
+                    </div>
+                 </div>
               </div>
-              
-              <p className="text-[10px] text-prospera-gray font-medium max-w-sm mx-auto leading-relaxed text-center italic">
-                This terminal environment is maintained and optimized by the TechForge Africa engineering collective.
-              </p>
+
+              <div className="pt-6 text-center">
+                 <button 
+                  onClick={() => setAboutView('team')}
+                  className="px-8 py-3 bg-prospera-darkest text-white border border-white/10 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all"
+                 >
+                   Return to Central Directory
+                 </button>
+              </div>
             </div>
-          </div>
-        );
+          );
+        }
+        return null;
       default: return null;
     }
   };
@@ -373,7 +555,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
           {sections.map(section => (
             <button 
               key={section.id} 
-              onClick={() => setActiveSection(section.id)} 
+              onClick={() => {
+                setActiveSection(section.id);
+                if (section.id === 'about') {
+                  setAboutView('metadata');
+                  setSelectedMember(null);
+                }
+              }} 
               className={`w-full p-6 rounded-[2rem] flex items-center gap-6 transition-all text-left group relative overflow-hidden ${activeSection === section.id ? 'bg-prospera-accent text-white shadow-2xl shadow-prospera-accent/40' : 'bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 text-prospera-gray hover:text-prospera-accent shadow-xl'}`}
             >
               {activeSection === section.id && (
@@ -395,7 +583,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
           <div className="p-10 md:p-14 bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 rounded-[4rem] shadow-2xl min-h-[600px] relative overflow-hidden flex flex-col">
             {activeSection ? (
               <div className="relative h-full animate-in fade-in duration-500">
-                <button onClick={() => setActiveSection(null)} className="absolute -top-6 -left-6 p-3 text-prospera-gray hover:text-prospera-accent mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors bg-gray-50 dark:bg-white/5 rounded-xl border border-white/5 shadow-sm"><ArrowLeft className="w-4 h-4" /> Navigation Back</button>
+                <button 
+                  onClick={() => setActiveSection(null)} 
+                  className="absolute -top-6 -left-6 p-3 text-prospera-gray hover:text-prospera-accent mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors bg-gray-50 dark:bg-white/5 rounded-xl border border-white/5 shadow-sm"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Navigation Back
+                </button>
                 <div className="pt-12">{renderActiveSection()}</div>
               </div>
             ) : (
