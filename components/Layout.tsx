@@ -21,7 +21,8 @@ import {
   Home,
   Zap,
   WifiOff,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 import { UserRole } from '../types.ts';
 import { useAppContext, AVATAR_SILHOUETTES } from '../context/AppContext.tsx';
@@ -39,11 +40,18 @@ interface LayoutProps {
 const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPath, onNavigate, isDarkMode, toggleDarkMode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { notifications, markNotificationRead, currentUser, preferences } = useAppContext();
+  const { notifications, markNotificationRead, currentUser, preferences, messages } = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Filter notifications: Show if global (no recipientId) OR matches current user
+  const unreadMessagesCount = useMemo(() => {
+    if (!currentUser) return 0;
+    if (role === UserRole.ADMIN) {
+      return messages.filter(m => m.recipientId === 'ADMIN' && !m.isRead).length;
+    }
+    return messages.filter(m => m.recipientId === currentUser.id && !m.isRead).length;
+  }, [messages, currentUser, role]);
+
   const personalizedNotifications = useMemo(() => {
     if (!currentUser) return [];
     return notifications.filter(n => !n.recipientId || n.recipientId === currentUser.id);
@@ -65,6 +73,7 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
   const adminLinks = [
     { name: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
     { name: 'Transactions', icon: ArrowLeftRight, path: 'transactions' },
+    { name: 'Messages', icon: MessageSquare, path: 'messages', badge: unreadMessagesCount },
     { name: 'Savings Target', icon: Target, path: 'savings-target' },
     { name: 'Users', icon: Users, path: 'users' },
     { name: 'Announcements', icon: Megaphone, path: 'announcements' },
@@ -77,6 +86,7 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
   const userLinks = [
     { name: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
     { name: 'Transactions', icon: ArrowLeftRight, path: 'transactions' },
+    { name: 'Messages', icon: MessageSquare, path: 'messages', badge: unreadMessagesCount },
     { name: 'Savings Target', icon: Target, path: 'savings-target' },
     { name: 'Reports', icon: FileText, path: 'reports' },
     { name: 'AI Insights', icon: BrainCircuit, path: 'ai-insights' },
@@ -86,9 +96,9 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
 
   const bottomNavLinks = [
     { name: 'Home', icon: Home, path: 'dashboard' },
-    { name: 'Transactions', icon: ArrowLeftRight, path: 'transactions' },
-    { name: 'Insights', icon: Zap, path: 'ai-insights' },
-    { name: 'Settings', icon: Settings, path: 'settings' },
+    { name: 'Ledger', icon: ArrowLeftRight, path: 'transactions' },
+    { name: 'Chat', icon: MessageSquare, path: 'messages', badge: unreadMessagesCount },
+    { name: 'Vault', icon: Settings, path: 'settings' },
   ];
 
   const links = role === UserRole.ADMIN ? adminLinks : userLinks;
@@ -133,7 +143,7 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
               <button
                 key={link.path}
                 onClick={() => handleLinkClick(link.path)}
-                className={`flex items-center w-full p-3 rounded-xl transition-all ${
+                className={`flex items-center w-full p-3 rounded-xl transition-all relative ${
                   currentPath === link.path 
                   ? 'bg-prospera-accent text-white font-bold shadow-lg shadow-prospera-accent/20' 
                   : isDarkMode ? 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-400' : 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-500'
@@ -141,6 +151,9 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
               >
                 <link.icon className="w-5 h-5" />
                 <span className="ml-3 text-[12px] uppercase tracking-wider font-bold">{link.name}</span>
+                {link.badge && link.badge > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">{link.badge}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -178,7 +191,7 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
             <button
               key={link.path}
               onClick={() => handleLinkClick(link.path)}
-              className={`flex items-center w-full p-2.5 rounded-xl transition-all ${
+              className={`flex items-center w-full p-2.5 rounded-xl transition-all relative ${
                 currentPath === link.path 
                 ? 'bg-prospera-accent text-white font-bold shadow-lg shadow-prospera-accent/20' 
                 : isDarkMode ? 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-400' : 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-500'
@@ -186,6 +199,12 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
             >
               <link.icon className="w-4 h-4" />
               {isSidebarOpen && <span className="ml-3 text-[11px] uppercase tracking-wider font-bold">{link.name}</span>}
+              {link.badge && link.badge > 0 && isSidebarOpen && (
+                <span className="ml-auto bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">{link.badge}</span>
+              )}
+              {link.badge && link.badge > 0 && !isSidebarOpen && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
             </button>
           ))}
         </nav>
@@ -294,12 +313,15 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
             <button
               key={link.path}
               onClick={() => handleLinkClick(link.path)}
-              className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all relative ${
                 currentPath === link.path ? 'text-prospera-accent scale-105' : 'text-prospera-gray'
               }`}
             >
               <link.icon className="w-5 h-5" />
               <span className="text-[8px] font-black uppercase tracking-widest">{link.name}</span>
+              {link.badge && link.badge > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full">{link.badge}</span>
+              )}
             </button>
           ))}
         </div>

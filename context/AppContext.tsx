@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { User, Transaction, SavingsTarget, Announcement, Notification, TransactionStatus, UserRole, UserStatus } from '../types.ts';
+import { User, Transaction, SavingsTarget, Announcement, Notification, TransactionStatus, UserRole, UserStatus, Message } from '../types.ts';
 
 export interface Group {
   id: string;
@@ -53,6 +53,7 @@ interface AppContextType {
   users: User[];
   currentUser: User | null;
   transactions: Transaction[];
+  messages: Message[];
   target: SavingsTarget;
   announcements: Announcement[];
   notifications: Notification[];
@@ -72,6 +73,8 @@ interface AppContextType {
   deleteUser: (id: string) => void;
   addNotification: (notif: Omit<Notification, 'id' | 'date' | 'read'>) => void;
   markNotificationRead: (id: string) => void;
+  sendMessage: (msg: Omit<Message, 'id' | 'timestamp' | 'isRead'>) => void;
+  markMessagesRead: (senderId: string) => void;
   updatePreferences: (prefs: Partial<AppPreferences>) => void;
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
   requestReset: () => void;
@@ -82,7 +85,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY = 'prospera_v3_state';
 
-// Factory to prevent object reference sharing between user sessions
 const getInitialPreferences = (): AppPreferences => ({
   biometricsEnabled: true,
   notificationsEnabled: true,
@@ -144,6 +146,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_messages`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [target, setTargetState] = useState<SavingsTarget>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_target`);
     return saved ? JSON.parse(saved) : {
@@ -156,17 +163,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<ToastState>({ message: '', type: 'info', visible: false });
 
-  // Persistence Sync
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_groups`, JSON.stringify(groups));
     localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(users));
     localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(transactions));
+    localStorage.setItem(`${STORAGE_KEY}_messages`, JSON.stringify(messages));
     localStorage.setItem(`${STORAGE_KEY}_target`, JSON.stringify(target));
     localStorage.setItem(`${STORAGE_KEY}_activeGroupId`, activeGroupId || '');
     localStorage.setItem(`${STORAGE_KEY}_currentUser`, JSON.stringify(currentUser));
-  }, [groups, users, transactions, target, activeGroupId, currentUser]);
+  }, [groups, users, transactions, messages, target, activeGroupId, currentUser]);
 
-  // Preference Switch Logic: Scoped strictly to USER ID
   useEffect(() => {
     if (currentUser) {
       const savedPrefs = localStorage.getItem(`${STORAGE_KEY}_prefs_${currentUser.id}`);
@@ -181,7 +187,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [currentUser?.id]);
 
-  // Preference Persistence: Scoped to USER ID
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(`${STORAGE_KEY}_prefs_${currentUser.id}`, JSON.stringify(preferences));
@@ -209,7 +214,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       status: UserStatus.ACTIVE, 
       rank: 0, 
       groupName, 
-      groupId, // Critical link
+      groupId, 
       totalContributed: 0, 
       gender: 'male' 
     };
@@ -222,10 +227,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const group = groups.find(g => g.id === groupId) || groupOverride;
     if (!group) return;
 
-    // Strict membership check for LOGIN mode
     const existingUser = users.find(u => u.email === email && u.groupId === groupId);
     
-    // If not name or groupOverride is provided, this is a standard login attempt
     if (!existingUser && !name && !groupOverride) {
       throw new Error("MEMBER_NOT_FOUND");
     }
@@ -264,6 +267,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Ledger entry recorded.', 'success');
   };
 
+  const sendMessage = (msg: Omit<Message, 'id' | 'timestamp' | 'isRead'>) => {
+    const newMsg: Message = {
+      ...msg,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isRead: false
+    };
+    setMessages(prev => [...prev, newMsg]);
+    
+    if (msg.recipientId === 'ADMIN') {
+      const group = groups.find(g => g.id === activeGroupId);
+      if (group) {
+        addNotification({
+          title: 'Direct Message',
+          message: `New message from ${msg.senderName}: "${msg.text.substring(0, 30)}..."`,
+          type: 'info',
+          recipientId: group.adminId
+        });
+      }
+    }
+  };
+
+  const markMessagesRead = (senderId: string) => {
+    setMessages(prev => prev.map(m => m.senderId === senderId ? { ...m, isRead: true } : m));
+  };
+
   const updateTransactionStatus = (id: string, status: TransactionStatus, notes?: string) => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
@@ -299,10 +328,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{ 
-      groups, activeGroupId, users, currentUser, transactions, target, announcements, notifications, preferences, toast,
+      groups, activeGroupId, users, currentUser, transactions, messages, target, announcements, notifications, preferences, toast,
       createGroup, setActiveGroup: setActiveGroupId, setTarget, addTransaction, updateTransaction, 
       updateTransactionStatus, deleteTransaction, addAnnouncement, updateUser, updateUserStatus, updateCurrentUser, 
-      deleteUser, addNotification, markNotificationRead, updatePreferences, showToast, requestReset, login, logout
+      deleteUser, addNotification, markNotificationRead, sendMessage, markMessagesRead, updatePreferences, showToast, requestReset, login, logout
     }}>
       {children}
     </AppContext.Provider>

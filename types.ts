@@ -44,6 +44,17 @@ export interface Transaction {
   adminNotes?: string;
 }
 
+export interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string; // 'ADMIN' or specific user ID
+  text: string;
+  timestamp: string;
+  isRead: boolean;
+  type: 'AI' | 'DIRECT';
+}
+
 export interface SavingsTarget {
   id: string;
   title: string;

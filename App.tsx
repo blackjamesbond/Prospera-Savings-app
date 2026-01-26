@@ -14,7 +14,7 @@ import AIInsightsPage from './pages/AIInsightsPage.tsx';
 import SettingsPage from './pages/SettingsPage.tsx';
 import ReportsPage from './pages/ReportsPage.tsx';
 import AnalyticsPage from './pages/AnalyticsPage.tsx';
-import AIChatBot from './components/AIChatBot.tsx';
+import MessagesPage from './pages/MessagesPage.tsx';
 import Toast from './components/Toast.tsx';
 import { UserRole, UserStatus } from './types.ts';
 import { Shield, Lock, Fingerprint, Scan, ShieldAlert, Key, Delete, Timer, Smartphone, UserCog, Loader2, Hourglass, ShieldCheck } from 'lucide-react';
@@ -115,6 +115,7 @@ const AppInternal: React.FC = () => {
     switch (currentPath) {
       case 'dashboard': return currentUser.role === UserRole.ADMIN ? <AdminDashboard /> : <UserDashboard />;
       case 'transactions': return <TransactionManagement role={currentUser.role} />;
+      case 'messages': return <MessagesPage />;
       case 'savings-target': return <SavingsTargetPage role={currentUser.role} />;
       case 'users': return <UsersManagement />;
       case 'announcements': return <AnnouncementsPage role={currentUser.role} />;
@@ -129,7 +130,6 @@ const AppInternal: React.FC = () => {
   return (
     <MainLayout role={currentUser.role} onLogout={logout} currentPath={currentPath} onNavigate={setCurrentPath} isDarkMode={preferences.theme === 'dark'} toggleDarkMode={() => updatePreferences({ theme: preferences.theme === 'dark' ? 'light' : 'dark' })}>
       <div className="animate-in fade-in duration-500">{renderContent()}</div>
-      <AIChatBot />
       <Toast message={toast.message} type={toast.type} visible={toast.visible} />
     </MainLayout>
   );
