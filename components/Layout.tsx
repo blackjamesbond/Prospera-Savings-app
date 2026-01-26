@@ -111,6 +111,52 @@ const MainLayout: React.FC<LayoutProps> = ({ children, role, onLogout, currentPa
 
   return (
     <div className={`flex min-h-screen ${isDarkMode ? 'bg-prospera-darkest text-white' : 'bg-gray-50 text-gray-900'}`}>
+      
+      {/* Mobile Drawer (Sidebar Overlay) */}
+      <div className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsMobileMenuOpen(false)} />
+        <div className={`absolute top-0 left-0 w-72 h-full ${isDarkMode ? 'bg-prospera-dark' : 'bg-white'} shadow-2xl transition-transform duration-300 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col p-6`}>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-prospera-accent rounded-xl flex items-center justify-center shadow-lg shadow-prospera-accent/20">
+                <Target className="text-white w-5 h-5" />
+              </div>
+              <span className="font-bold text-lg tracking-tight text-prospera-accent">Prospera</span>
+            </div>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 dark:text-gray-400 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar pb-10">
+            {links.map((link) => (
+              <button
+                key={link.path}
+                onClick={() => handleLinkClick(link.path)}
+                className={`flex items-center w-full p-3 rounded-xl transition-all ${
+                  currentPath === link.path 
+                  ? 'bg-prospera-accent text-white font-bold shadow-lg shadow-prospera-accent/20' 
+                  : isDarkMode ? 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-400' : 'hover:bg-prospera-accent/10 hover:text-prospera-accent text-gray-500'
+                }`}
+              >
+                <link.icon className="w-5 h-5" />
+                <span className="ml-3 text-[12px] uppercase tracking-wider font-bold">{link.name}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="pt-6 border-t dark:border-gray-700/10 border-gray-200">
+            <button 
+              onClick={onLogout}
+              className="flex items-center w-full p-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="ml-3 font-bold text-[12px] uppercase tracking-wider">Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <aside className={`hidden md:flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-52' : 'w-18'} ${isDarkMode ? 'bg-prospera-dark' : 'bg-white border-r border-gray-200'} sticky top-0 h-screen z-40 shadow-2xl shadow-black/10`}>
         <div className="p-5 flex items-center justify-between">
           {isSidebarOpen ? (

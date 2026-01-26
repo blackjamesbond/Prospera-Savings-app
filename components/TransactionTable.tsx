@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Check, X, Trash2, Search, Filter, AlertTriangle, Calendar, User, Info, FileText, ChevronRight, XCircle, CheckCircle2, MessageSquare, ExternalLink, Target, Terminal, ShieldAlert, Lock, Trash } from 'lucide-react';
+import { Check, X, Trash2, Search, Filter, AlertTriangle, Calendar, User, Info, FileText, ChevronRight, XCircle, CheckCircle2, MessageSquare, ExternalLink, Target, Terminal, ShieldAlert, Lock, Trash, Download, StickyNote, Save } from 'lucide-react';
 import { Transaction, TransactionStatus, UserRole } from '../types.ts';
 import { useAppContext } from '../context/AppContext.tsx';
 
@@ -10,7 +10,7 @@ interface TransactionTableProps {
 }
 
 const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showActions = true }) => {
-  const { updateTransaction, deleteTransaction, currentUser } = useAppContext();
+  const { updateTransaction, deleteTransaction, currentUser, showToast } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [adminNote, setAdminNote] = useState('');
@@ -32,10 +32,53 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showA
     }
   };
 
+  const handleUpdateNoteOnly = () => {
+    if (selectedTransaction) {
+      updateTransaction(selectedTransaction.id, { adminNotes: adminNote });
+      showToast('Transaction notes updated.', 'success');
+      setSelectedTransaction(prev => prev ? { ...prev, adminNotes: adminNote } : null);
+    }
+  };
+
   const handleDelete = (id: string) => {
     deleteTransaction(id);
     setIsDeleting(null);
     setSelectedTransaction(null);
+  };
+
+  const exportToCSV = () => {
+    if (filteredTransactions.length === 0) {
+      showToast('No records to export.', 'info');
+      return;
+    }
+
+    const headers = ['Timestamp', 'Source Member', 'Asset Reference', 'Amount', 'Currency', 'Status', 'Description', 'Admin Notes'];
+    const rows = filteredTransactions.map(tx => [
+      tx.date,
+      `"${tx.userName.replace(/"/g, '""')}"`,
+      `"${(tx.accountNumber || 'SYSTEM-RECON').replace(/"/g, '""')}"`,
+      tx.amount,
+      tx.currency,
+      tx.status,
+      `"${tx.description.replace(/"/g, '""')}"`,
+      `"${(tx.adminNotes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Prospera_Ledger_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('CSV Exported Successfully.', 'success');
   };
 
   const isAdmin = currentUser.role === UserRole.ADMIN;
@@ -54,6 +97,14 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showA
           />
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
+           {isAdmin && (
+             <button 
+               onClick={exportToCSV}
+               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-prospera-accent/10 border border-prospera-accent/20 rounded-xl hover:bg-prospera-accent hover:text-white transition-all text-[10px] font-black uppercase tracking-widest text-prospera-accent"
+             >
+              <Download className="w-3.5 h-3.5" /> Export CSV
+             </button>
+           )}
            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-50 dark:bg-prospera-darkest border border-gray-100 dark:border-white/10 rounded-xl hover:bg-prospera-accent hover:text-white transition-all text-[10px] font-black uppercase tracking-widest text-prospera-gray">
             <Filter className="w-3.5 h-3.5" /> Filter
            </button>
@@ -173,20 +224,20 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showA
               <button onClick={() => setSelectedTransaction(null)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors text-prospera-gray"><X className="w-6 h-6" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
-              <div className="p-8 bg-white dark:bg-prospera-darkest/80 border border-gray-100 dark:border-white/5 rounded-2xl shadow-inner space-y-8 relative">
-                <div className="grid grid-cols-2 gap-8">
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 no-scrollbar">
+              <div className="p-6 sm:p-8 bg-white dark:bg-prospera-darkest/80 border border-gray-100 dark:border-white/5 rounded-2xl shadow-inner space-y-6 relative">
+                <div className="grid grid-cols-2 gap-4 sm:gap-8">
                   <div className="space-y-1">
                     <p className="text-[9px] text-prospera-gray uppercase font-black tracking-widest">Saved By</p>
-                    <p className="text-lg font-black dark:text-white text-gray-900">{selectedTransaction.userName}</p>
+                    <p className="text-base sm:text-lg font-black dark:text-white text-gray-900">{selectedTransaction.userName}</p>
                   </div>
                   <div className="space-y-1 text-right">
                     <p className="text-[9px] text-prospera-gray uppercase font-black tracking-widest">Date</p>
-                    <p className="text-lg font-black dark:text-white text-gray-900 font-mono uppercase">{selectedTransaction.date}</p>
+                    <p className="text-base sm:text-lg font-black dark:text-white text-gray-900 font-mono uppercase">{selectedTransaction.date}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[9px] text-prospera-gray uppercase font-black tracking-widest">Money</p>
-                    <p className="text-3xl font-black text-prospera-accent tracking-tighter">{selectedTransaction.amount.toLocaleString()} <span className="text-xs opacity-50">{selectedTransaction.currency}</span></p>
+                    <p className="text-2xl sm:text-3xl font-black text-prospera-accent tracking-tighter">{selectedTransaction.amount.toLocaleString()} <span className="text-xs opacity-50">{selectedTransaction.currency}</span></p>
                   </div>
                   <div className="space-y-1 text-right">
                     <p className="text-[9px] text-prospera-gray uppercase font-black tracking-widest">Status</p>
@@ -202,13 +253,42 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showA
                   </div>
                 </div>
 
-                <div className="pt-8 border-t border-dashed border-gray-200 dark:border-white/10">
+                <div className="pt-6 border-t border-dashed border-gray-200 dark:border-white/10">
                     <p className="text-[9px] text-prospera-gray uppercase font-black tracking-widest mb-2 flex items-center gap-2">
                       <Terminal className="w-2.5 h-2.5" /> Details Found
                     </p>
                     <div className="p-4 bg-gray-50 dark:bg-black/20 rounded-xl font-mono text-xs dark:text-prospera-accent text-prospera-dark leading-relaxed italic border dark:border-white/5 border-gray-100">
                       "{selectedTransaction.description}"
                     </div>
+                </div>
+
+                {/* Admin Notes Section */}
+                <div className="pt-6 border-t border-dashed border-gray-200 dark:border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] text-prospera-gray uppercase font-black tracking-widest flex items-center gap-2">
+                      <StickyNote className="w-2.5 h-2.5" /> Admin Dossier Notes
+                    </p>
+                    {isAdmin && (
+                      <button 
+                        onClick={handleUpdateNoteOnly}
+                        className="text-[8px] font-black uppercase text-prospera-accent hover:underline flex items-center gap-1"
+                      >
+                        <Save className="w-2 h-2" /> Quick Save
+                      </button>
+                    )}
+                  </div>
+                  {isAdmin ? (
+                    <textarea 
+                      value={adminNote}
+                      onChange={(e) => setAdminNote(e.target.value)}
+                      placeholder="Enter internal audit notes or feedback for the member..."
+                      className="w-full h-24 p-4 bg-white dark:bg-prospera-darkest border border-gray-100 dark:border-white/10 rounded-xl focus:outline-none focus:border-prospera-accent transition-all text-xs dark:text-white text-gray-900 shadow-inner font-medium resize-none"
+                    />
+                  ) : (
+                    <div className="p-4 bg-prospera-accent/5 dark:bg-prospera-accent/5 rounded-xl text-xs font-medium dark:text-gray-300 text-gray-600 leading-relaxed border border-prospera-accent/10">
+                      {selectedTransaction.adminNotes || "No audit feedback provided by the Lead Founder yet."}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -220,7 +300,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showA
                   <button onClick={() => setPendingAction({ id: selectedTransaction.id, status: TransactionStatus.APPROVED })} className="flex-1 py-4 bg-prospera-accent text-white font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-prospera-accent/40 hover:scale-[1.01] transition-all"><CheckCircle2 className="w-4 h-4" /> Yes</button>
                 </div>
               ) : (
-                <button onClick={() => setSelectedTransaction(null)} className="w-full py-4 bg-prospera-darkest text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5">Close</button>
+                <button onClick={() => setSelectedTransaction(null)} className="w-full py-4 bg-prospera-darkest text-white font-black uppercase tracking-widest text-[9px] rounded-xl border border-white/5">Close Dossier</button>
               )}
             </div>
           </div>
@@ -233,9 +313,9 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, showA
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl ${pendingAction.status === TransactionStatus.APPROVED ? 'bg-prospera-accent/10' : 'bg-red-500/10'}`}>
               <ShieldAlert className={`w-8 h-8 ${pendingAction.status === TransactionStatus.APPROVED ? 'text-prospera-accent' : 'text-red-500'} animate-pulse`} />
             </div>
-            <h3 className="text-2xl font-black mb-2 dark:text-white text-gray-900 tracking-tighter">Are you sure?</h3>
+            <h3 className="text-2xl font-black mb-2 dark:text-white text-gray-900 tracking-tighter">Confirm Audit</h3>
             <p className="text-prospera-gray text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed">
-              Marking this as <span className={pendingAction.status === TransactionStatus.APPROVED ? 'text-prospera-accent' : 'text-red-500'}>{pendingAction.status}</span>.
+              Marking this entry as <span className={pendingAction.status === TransactionStatus.APPROVED ? 'text-prospera-accent' : 'text-red-500'}>{pendingAction.status}</span>.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setPendingAction(null)} className="flex-1 py-4 bg-white/5 border border-white/5 rounded-xl font-black text-[9px] uppercase tracking-widest text-prospera-gray hover:bg-white/10 transition-all">Cancel</button>

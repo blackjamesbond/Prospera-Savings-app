@@ -36,9 +36,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
     };
 
@@ -51,15 +49,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
 
   const handleInstallApp = async () => {
     if (deferredPrompt) {
-      // Show the install prompt
       deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`User response to the install prompt: ${outcome}`);
-      // We've used the prompt, and can't use it again, throw it away
       setDeferredPrompt(null);
     } else {
-      // Fallback for browsers that don't support the beforeinstallprompt event (like Safari on iOS)
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
@@ -89,18 +83,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
         
         {/* Glamorous Glowing Background (Static Layer) */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          {/* Main Glow Blobs */}
           <div className="absolute top-[-10%] left-[-10%] w-[80%] h-[40%] bg-prospera-accent/10 rounded-full blur-[120px] animate-pulse-slow" />
           <div className="absolute bottom-[20%] right-[-20%] w-[90%] h-[50%] bg-blue-600/5 rounded-full blur-[150px] animate-float" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-prospera-darkest/50 to-prospera-darkest" />
-          
-          {/* Subtle Grid Overlay */}
           <div className="absolute inset-0 terminal-grid opacity-20" />
         </div>
 
         {/* Fixed Header Section (Ticker + Navigation) */}
         <div className="relative z-50 flex flex-col">
-          {/* Global Status Ticker */}
           <div className="w-full bg-black/60 backdrop-blur-xl border-b border-white/5 py-2 px-4 overflow-hidden shadow-lg">
             <div className="flex items-center gap-10 animate-marquee whitespace-nowrap">
               <span className="text-[7px] font-black text-prospera-accent uppercase tracking-widest flex items-center gap-2">
@@ -115,7 +105,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
             </div>
           </div>
 
-          {/* Fixed Main Navigation */}
           <header className="px-6 py-5 flex justify-between items-center bg-[#0F131A]/80 backdrop-blur-3xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-gradient-to-br from-prospera-accent to-[#00A37A] rounded-xl flex items-center justify-center shadow-lg shadow-prospera-accent/40">
@@ -132,16 +121,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
           </header>
         </div>
 
-        {/* Scrollable Content Area */}
         <div className="relative z-20 flex-1 overflow-y-auto no-scrollbar pb-10">
           
-          {/* Hero Section */}
           <section className="min-h-[75vh] flex flex-col justify-center px-6 pt-10 pb-20 relative overflow-visible">
-            {/* Glamour Glow Cluster - Positioned behind text */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] aspect-square pointer-events-none -z-10">
-               <div className="absolute inset-0 bg-prospera-accent/15 blur-[120px] rounded-full animate-pulse-slow" />
-               <div className="absolute inset-0 bg-blue-600/10 blur-[150px] rounded-full translate-x-10 translate-y-10 animate-float" />
-               <div className="absolute inset-0 bg-emerald-400/5 blur-[100px] rounded-full -translate-x-20 -translate-y-10" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] aspect-square pointer-events-none -z-10">
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(1,195,141,0.2)_0%,transparent_70%)] blur-[80px] animate-pulse-slow" />
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_40%,rgba(59,130,246,0.15)_0%,transparent_60%)] blur-[100px] animate-float" />
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_60%,rgba(16,185,129,0.1)_0%,transparent_60%)] blur-[90px]" />
+
+               <div className="absolute inset-0 opacity-[0.08] mix-blend-screen" 
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='60' viewBox='0 0 52 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M26 0l26 15v30L26 60 0 45V15z' fill='none' stroke='%2301C38D' stroke-width='1'/%3E%3C/svg%3E")`,
+                      backgroundSize: '40px 46px'
+                    }} 
+               />
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0F131A_85%)]" />
             </div>
 
             <div className="space-y-8 relative z-20">
@@ -179,41 +173,54 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
             </div>
           </section>
 
-          {/* Feature Grid Mobile */}
           <section id="features" className="px-6 py-20 space-y-12">
              <div className="space-y-2">
                 <p className="text-[9px] font-black text-prospera-accent uppercase tracking-[0.4em]">Protocol Specifications</p>
                 <h2 className="text-3xl font-black text-white tracking-tighter">Engineered for <br />Certainty.</h2>
              </div>
 
-             <div className="space-y-4">
+             <div className="space-y-6">
                 {[
                   { title: 'Algorithmic Sync', icon: Cpu, desc: 'Verification of transaction artifacts at 4ms velocity. Zero-knowledge proof for financial integrity.', color: 'text-blue-400', bg: 'bg-blue-400/10' },
                   { title: 'Vault Logic', icon: ShieldCheck, desc: 'Local-first encrypted dossiers. Your circle\'s capital remains invisible to the core network.', color: 'text-prospera-accent', bg: 'bg-prospera-accent/10' },
                   { title: 'Goal Maturity', icon: Target, desc: 'Deterministic tracking against collective milestones. Real-time liquidity forecasting.', color: 'text-yellow-500', bg: 'bg-yellow-500/10' }
                 ].map((feat, i) => (
-                  <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2rem] space-y-6 relative overflow-hidden group backdrop-blur-sm">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-700">
-                       <feat.icon className={`w-20 h-20 ${feat.color}`} />
-                    </div>
-                    <div className={`w-12 h-12 ${feat.bg} rounded-xl flex items-center justify-center`}>
-                      <feat.icon className={`w-6 h-6 ${feat.color}`} />
-                    </div>
-                    <div className="space-y-2 relative z-10">
-                       <h3 className="text-xl font-black text-white tracking-tight">{feat.title}</h3>
-                       <p className="text-[11px] text-white/40 font-medium leading-relaxed">
-                        {feat.desc}
-                       </p>
+                  <div key={i} className="relative p-[2px] rounded-[2.5rem] group h-full transition-all duration-500 overflow-visible">
+                    {/* Surrounding outer glow (Spilled light) */}
+                    <div className="absolute inset-[-20px] bg-[conic-gradient(from_0deg,transparent,transparent,var(--prospera-accent),transparent,transparent)] opacity-0 group-hover:opacity-40 transition-opacity duration-700 animate-spin-slow blur-2xl pointer-events-none" />
+                    
+                    {/* Sharp border line light */}
+                    <div className="absolute inset-0 rounded-[2.5rem] bg-[conic-gradient(from_0deg,transparent,transparent,var(--prospera-accent),transparent,transparent)] opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-spin-slow pointer-events-none" />
+                    
+                    <div className="relative p-8 bg-[#0F131A] border border-white/5 rounded-[calc(2.5rem-2px)] space-y-6 overflow-hidden h-full shadow-inner">
+                      {/* Web Comb Inside Card */}
+                      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                           style={{
+                             backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='60' viewBox='0 0 52 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M26 0l26 15v30L26 60 0 45V15z' fill='none' stroke='%2301C38D' stroke-width='1'/%3E%3C/svg%3E")`,
+                             backgroundSize: '24px 28px'
+                           }} 
+                      />
+                      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-700">
+                        <feat.icon className={`w-20 h-20 ${feat.color}`} />
+                      </div>
+                      <div className={`w-12 h-12 ${feat.bg} rounded-xl flex items-center justify-center`}>
+                        <feat.icon className={`w-6 h-6 ${feat.color}`} />
+                      </div>
+                      <div className="space-y-2 relative z-10">
+                        <h3 className="text-xl font-black text-white tracking-tight">{feat.title}</h3>
+                        <p className="text-[11px] text-white/40 font-medium leading-relaxed">
+                          {feat.desc}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
              </div>
           </section>
 
-          {/* Security Deep-Dive Mobile */}
           <section id="security" className="px-6 py-24 my-10 relative">
              <div className="absolute inset-0 bg-gradient-to-br from-prospera-accent/10 via-transparent to-blue-500/5 rounded-[3rem] blur-3xl" />
-             <div className="relative z-10 p-8 bg-white/5 border border-white/10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl space-y-10 terminal-grid">
+             <div className="relative z-10 p-8 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl shadow-2xl space-y-10 terminal-grid">
                 <div className="flex items-center gap-4">
                    <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center">
                       <ShieldAlert className="w-7 h-7 text-red-500" />
@@ -241,7 +248,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
              </div>
           </section>
 
-          {/* Footer Area Mobile */}
           <footer className="px-6 py-20 text-center space-y-12 bg-gradient-to-b from-transparent to-black/20">
             <div className="flex flex-col items-center gap-5">
               <div className="w-12 h-12 bg-prospera-accent/10 border border-prospera-accent/20 rounded-2xl flex items-center justify-center shadow-xl shadow-prospera-accent/10">
@@ -265,7 +271,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
           </footer>
         </div>
 
-        {/* Sidebar Navigation Drawer */}
         <div className={`fixed inset-0 z-[100] transition-all duration-500 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsSidebarOpen(false)} />
           <div className={`absolute top-0 right-0 w-[85%] h-full bg-[#0F131A] border-l border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.5)] transition-transform duration-500 transform ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} p-8 flex flex-col`}>
@@ -328,8 +333,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
 
       {/* DESKTOP VIEW (Stretched S-Curve Layout - Preserved) */}
       <div className="hidden md:block">
-        {/* Nav Desktop */}
-        <nav className="fixed top-0 left-0 right-0 z-[100] px-12 py-8">
+        <nav className="fixed top-0 left-0 right-0 z-[100] px-12 py-5 bg-white/80 dark:bg-prospera-darkest/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/5 shadow-sm">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-prospera-accent rounded-xl flex items-center justify-center shadow-lg shadow-prospera-accent/20">
@@ -345,7 +349,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
           </div>
         </nav>
 
-        {/* Hero Section Desktop */}
         <section className="relative min-h-screen flex items-center overflow-hidden bg-gray-50">
           <div className="absolute inset-0 z-0">
             <svg 
@@ -451,21 +454,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
           </div>
         </section>
 
-        {/* Feature Grid Desktop */}
         <section id="features-desktop" className="py-40 bg-prospera-darkest relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-12 relative z-10">
-            <div className="grid grid-cols-3 gap-16">
+            <div className="grid grid-cols-3 gap-12">
               {[
                 { icon: Shield, title: 'Vault Shield', desc: 'Secure local-first ledgers ensuring your group financial data never leaves your circle.', color: 'text-prospera-accent', bg: 'bg-prospera-accent/5' },
                 { icon: Zap, title: 'Algorithmic Sync', desc: 'Instant verification of deposits from bank messages and mobile money receipts.', color: 'text-blue-500', bg: 'bg-blue-500/5' },
                 { icon: Target, title: 'Objective Tracking', desc: 'Strategic progress monitoring against collective milestones and shared goals.', color: 'text-yellow-500', bg: 'bg-yellow-500/5' }
               ].map((feat, i) => (
-                <div key={i} className="group p-10 bg-white/5 border border-white/5 rounded-xl hover:bg-white/[0.08] hover:border-prospera-accent/30 transition-all shadow-2xl">
-                  <div className={`w-14 h-14 ${feat.bg} rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform`}>
-                    <feat.icon className={`w-7 h-7 ${feat.color}`} />
+                <div key={i} className="relative p-[2px] rounded-2xl group transition-all duration-500 overflow-visible h-full">
+                  {/* Surrounding outer glow (Spilled light) - blurred */}
+                  <div className="absolute inset-[-25px] bg-[conic-gradient(from_0deg,transparent,transparent,var(--prospera-accent),transparent,transparent)] opacity-0 group-hover:opacity-40 transition-opacity duration-700 animate-spin-slow blur-2xl pointer-events-none" />
+                  
+                  {/* Sharp border line light */}
+                  <div className="absolute inset-0 rounded-2xl bg-[conic-gradient(from_0deg,transparent,transparent,var(--prospera-accent),transparent,transparent)] opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-spin-slow pointer-events-none" />
+                  
+                  <div className="relative h-full p-10 bg-[#161B24] border border-white/5 rounded-[calc(1rem-2px)] hover:bg-[#1A202A] transition-all shadow-2xl flex flex-col">
+                    {/* Web Comb inside card */}
+                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                         style={{
+                           backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='60' viewBox='0 0 52 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M26 0l26 15v30L26 60 0 45V15z' fill='none' stroke='%2301C38D' stroke-width='1'/%3E%3C/svg%3E")`,
+                           backgroundSize: '32px 36px'
+                         }} 
+                    />
+                    <div className={`w-14 h-14 ${feat.bg} rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform relative z-10`}>
+                      <feat.icon className={`w-7 h-7 ${feat.color}`} />
+                    </div>
+                    <h3 className="text-xl font-black text-white mb-3 tracking-tight relative z-10">{feat.title}</h3>
+                    <p className="text-gray-400 text-[13px] font-medium leading-relaxed relative z-10">{feat.desc}</p>
                   </div>
-                  <h3 className="text-xl font-black text-white mb-3 tracking-tight">{feat.title}</h3>
-                  <p className="text-gray-400 text-[13px] font-medium leading-relaxed">{feat.desc}</p>
                 </div>
               ))}
             </div>
@@ -473,7 +490,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
           <div className="absolute bottom-0 left-0 w-full h-24 bg-gray-50" style={{ clipPath: 'path("M 0 100 Q 50 0 100 100 L 100 100 L 0 100 Z")' }} />
         </section>
 
-        {/* Footer Desktop */}
         <footer className="py-20 bg-gray-50 border-t border-gray-100">
           <div className="max-w-7xl mx-auto px-12 flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="flex items-center gap-3">
@@ -505,9 +521,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLogin }) => {
         .animate-pulse-slow {
           animation: pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        .animate-spin-slow {
+          animation: spin 3.5s linear infinite;
+        }
         @keyframes pulse {
           0%, 100% { opacity: 0.1; transform: scale(1); }
           50% { opacity: 0.2; transform: scale(1.1); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
