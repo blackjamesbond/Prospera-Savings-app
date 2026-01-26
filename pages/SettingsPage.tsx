@@ -1,7 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-// Added missing 'Target' to imports from lucide-react
-import { Settings, Shield, Bell, User as UserIcon, Palette, Globe, Lock, ChevronRight, Save, ArrowLeft, Eye, EyeOff, Code2, Camera, Info, Sun, Sparkles, Check, Trash, Key, Timer, Smartphone, Layout, Type, ToggleRight, Target } from 'lucide-react';
+import { Settings, Shield, Bell, User as UserIcon, Palette, Globe, Lock, ChevronRight, Save, ArrowLeft, Eye, EyeOff, Code2, Camera, Info, Sun, Sparkles, Check, Trash, Key, Timer, Smartphone, Layout, Type, ToggleRight, Target, Users, Cpu } from 'lucide-react';
 import { useAppContext, AVATAR_SILHOUETTES } from '../context/AppContext.tsx';
 import { UserRole } from '../types.ts';
 
@@ -282,29 +281,68 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLock }) => {
           </div>
         );
       case 'about':
+        const team = [
+          { name: 'Dominic Gekonde', role: 'Lead Engineer', seed: 'Felix' },
+          { name: 'Barrack Rabuku', role: 'Product Strategist', seed: 'George' },
+          { name: 'Machel', role: 'Security Ops', seed: 'Machel' },
+          { name: 'Seline', role: 'UX Lead', seed: 'Seline' },
+          { name: 'Bodi', role: 'Cloud Architect', seed: 'Bodi' },
+          { name: 'Karen', role: 'Data Scientist', seed: 'Karen' },
+        ];
+
         return (
           <div className="space-y-8 animate-in slide-in-from-right duration-400">
-            <h3 className="text-2xl font-black dark:text-white text-gray-900 flex items-center gap-3 tracking-tight">
-              <Code2 className="text-prospera-accent w-6 h-6" />
-              Terminal Metadata
-            </h3>
-            <div className="p-12 bg-gray-50 dark:bg-prospera-darkest/80 rounded-[4rem] border border-gray-100 dark:border-white/5 space-y-10 text-center terminal-grid relative">
-              <div className="relative inline-block">
-                 <img src={preferences.developerImage || AVATAR_SILHOUETTES.male} alt="" className="w-32 h-32 rounded-[3rem] border-4 border-prospera-accent mx-auto object-cover shadow-2xl" />
-                 <div className="absolute -bottom-2 -right-2 bg-prospera-accent text-white p-2 rounded-xl shadow-xl">
-                    <Shield className="w-4 h-4" />
-                 </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black dark:text-white text-gray-900 flex items-center gap-3 tracking-tight">
+                <Code2 className="text-prospera-accent w-6 h-6" />
+                Terminal Metadata
+              </h3>
+              <div className="px-3 py-1 bg-prospera-accent/10 border border-prospera-accent/20 rounded-lg">
+                <p className="text-[9px] font-black text-prospera-accent uppercase tracking-widest">TechForge Africa</p>
               </div>
-              <div className="space-y-2">
-                <h4 className="text-3xl font-black dark:text-white text-gray-900 tracking-tighter">Dominic Gekonde</h4>
-                <p className="text-prospera-accent text-[11px] font-black uppercase tracking-[0.4em]">Lead Terminal Architect</p>
+            </div>
+
+            <div className="p-8 sm:p-12 bg-gray-50 dark:bg-prospera-darkest/80 rounded-[3rem] border border-gray-100 dark:border-white/5 space-y-10 terminal-grid relative">
+              <div className="space-y-2 text-center">
+                <h4 className="text-[10px] font-black text-prospera-gray uppercase tracking-[0.4em] mb-2">Developed By</h4>
+                <div className="flex items-center justify-center gap-3">
+                   <div className="p-2 bg-prospera-accent rounded-xl">
+                      <Cpu className="w-6 h-6 text-white" />
+                   </div>
+                   <h2 className="text-4xl font-black dark:text-white text-gray-900 tracking-tighter">TechForge Africa</h2>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 px-2">
+                   <Users className="w-4 h-4 text-prospera-accent" />
+                   <h5 className="text-[9px] font-black text-prospera-gray uppercase tracking-widest">Meet the Brains behind Prospera</h5>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   {team.map((member, i) => (
+                     <div key={i} className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-prospera-accent/5 transition-colors group">
+                        <img 
+                          src={`https://api.dicebear.com/7.x/micah/svg?seed=${member.seed}&backgroundColor=f1f5f9`} 
+                          alt={member.name} 
+                          className="w-12 h-12 rounded-xl border-2 border-prospera-accent/20 group-hover:border-prospera-accent transition-colors object-cover" 
+                        />
+                        <div className="min-w-0">
+                           <p className="text-[11px] font-black dark:text-white text-gray-900 truncate">{member.name}</p>
+                           <p className="text-[8px] font-black text-prospera-accent uppercase tracking-widest">{member.role}</p>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </div>
+
+              <div className="pt-10 border-t border-white/5 flex flex-col sm:flex-row justify-center gap-4 text-center">
                  <span className="px-6 py-2.5 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-prospera-gray tracking-widest uppercase">Version 3.5.1-LTS</span>
                  <span className="px-6 py-2.5 bg-prospera-accent/10 border border-prospera-accent/20 rounded-2xl text-[10px] font-black text-prospera-accent tracking-widest uppercase">Active Protocol Stable</span>
               </div>
-              <p className="text-xs text-prospera-gray font-medium max-w-sm mx-auto leading-relaxed">
-                This terminal is protected by decentralized encryption protocols. All records are verified on the group ledger.
+              
+              <p className="text-[10px] text-prospera-gray font-medium max-w-sm mx-auto leading-relaxed text-center italic">
+                This terminal environment is maintained and optimized by the TechForge Africa engineering collective.
               </p>
             </div>
           </div>
