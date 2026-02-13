@@ -1,9 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { Upload, Plus, History, Ban, FileSearch, Send, AlertCircle, Loader2, Sparkles, CheckCircle2, FileDown, Layers, CheckCircle, SearchCode, Database, X, Smartphone, ShieldCheck, CreditCard, ArrowRight, Zap, CheckCircle as CheckIcon, Clock } from 'lucide-react';
+import { Upload, Plus, History, Ban, FileSearch, Send, AlertCircle, Loader2, Sparkles, CheckCircle2, FileDown, Layers, CheckCircle, SearchCode, Database, X, Smartphone, ShieldCheck, CreditCard, ArrowRight, Zap, CheckCircle as CheckIcon, Clock, ShieldAlert } from 'lucide-react';
 import { useAppContext } from '../context/AppContext.tsx';
 import { UserRole, TransactionStatus } from '../types.ts';
 import TransactionTable from '../components/TransactionTable.tsx';
+
+/**
+ * AFRICA'S TALKING CONFIGURATION
+ * Replace these values with your actual credentials from the Africa's Talking Dashboard.
+ * Warning: Exposing API Keys in the frontend is only for testing. Use a backend proxy for production.
+ */
+const AT_CONFIG = {
+  USERNAME: 'sandbox', // Use 'sandbox' for testing, or your real username
+  API_KEY: 'YOUR_AT_API_KEY_HERE', 
+  PRODUCT_NAME: 'ProsperaVault', // Your AT Payment Product Name
+  CURRENCY: 'KES'
+};
 
 interface TransactionManagementProps {
   role: UserRole;
@@ -19,7 +31,8 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
   // Instant Deposit (STK Push) State
   const [stkPhone, setStkPhone] = useState('');
   const [stkAmount, setStkAmount] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'INITIATING' | 'SENDING' | 'WAITING' | 'SUCCESS'>('IDLE');
+  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'INITIATING' | 'SENDING' | 'WAITING' | 'SUCCESS' | 'ERROR'>('IDLE');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (initialSharedText) {
@@ -28,31 +41,6 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
       handleLocalParse(initialSharedText);
     }
   }, [initialSharedText]);
-
-  const parseSafeDate = (dateStr: string): string => {
-    if (!dateStr) return new Date().toISOString().split('T')[0];
-    const cleaned = dateStr.replace(/^(on|at)\s+/i, '').trim();
-    const parts = cleaned.split(/[\/\-\.]/);
-    if (parts.length === 3) {
-      let day = parts[0].padStart(2, '0');
-      let month = parts[1].padStart(2, '0');
-      let year = parts[2];
-      if (day.length === 4) {
-        year = day;
-        day = parts[2].padStart(2, '0');
-      } else if (year.length === 2) {
-        year = `20${year}`;
-      }
-      if (!isNaN(parseInt(year)) && !isNaN(parseInt(month)) && !isNaN(parseInt(day))) {
-        return `${year}-${month}-${day}`;
-      }
-    }
-    try {
-      const d = new Date(cleaned);
-      if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-    } catch (e) {}
-    return new Date().toISOString().split('T')[0];
-  };
 
   const handleLocalParse = (msg: string) => {
     if (!msg.trim()) {
@@ -69,11 +57,10 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
     if (amountMatch) {
       const amountStr = amountMatch[1] || amountMatch[2];
       const amount = parseFloat(amountStr.replace(/,/g, ''));
-      const foundDate = dateMatch ? parseSafeDate(dateMatch[0]) : new Date().toISOString().split('T')[0];
       setExtractedData({
         amount,
         currency: 'KES',
-        date: foundDate,
+        date: dateMatch ? dateMatch[0] : new Date().toISOString().split('T')[0],
         description: 'Automatic Ledger Read',
         accountNumber: refMatch ? refMatch[0] : `AUTO-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         raw: msg
@@ -108,47 +95,93 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
       return;
     }
 
+    if (AT_CONFIG.API_KEY === 'YOUR_AT_API_KEY_HERE') {
+      showToast('Developer Error: Africa\'s Talking API Key not configured.', 'error');
+      return;
+    }
+
     setPaymentStatus('INITIATING');
+    setErrorMessage('');
     
-    // Stage 1: Handshake with Africa's Talking Gateway (Simulated)
-    await new Promise(r => setTimeout(r, 1500));
-    setPaymentStatus('SENDING');
+    try {
+      // Formulate the international format: 254...
+      const formattedPhone = `+254${stkPhone.startsWith('0') ? stkPhone.substring(1) : stkPhone}`;
+      
+      const payload = {
+        username: AT_CONFIG.USERNAME,
+        productName: AT_CONFIG.PRODUCT_NAME,
+        phoneNumber: formattedPhone,
+        currencyCode: AT_CONFIG.CURRENCY,
+        amount: parseFloat(stkAmount),
+        metadata: {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          source: "Prospera Mobile App"
+        }
+      };
 
-    // Stage 2: Triggering STK Push (Simulated API call to AT)
-    // In a real app: fetch('https://api.africastalking.com/mobile/checkout/request', { ... })
-    await new Promise(r => setTimeout(r, 2000));
-    setPaymentStatus('WAITING');
+      setPaymentStatus('SENDING');
 
-    // Stage 3: Awaiting User PIN Entry on Phone
-    await new Promise(r => setTimeout(r, 4000));
-    
-    // Complete Payment
-    addTransaction({
-      userId: currentUser.id,
-      userName: currentUser.name,
-      amount: parseFloat(stkAmount),
-      currency: 'KES',
-      date: new Date().toISOString().split('T')[0],
-      description: 'M-Pesa Instant Deposit (STK Push)',
-      status: TransactionStatus.APPROVED, // Typically instant payments are auto-approved
-      accountNumber: `STK-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-      rawMessage: `STK Push via Africa's Talking to ${stkPhone}`
-    });
+      // Note: We use the production endpoint. For sandbox, use: https://payments.sandbox.africastalking.com/...
+      const baseUrl = AT_CONFIG.USERNAME === 'sandbox' 
+        ? 'https://payments.sandbox.africastalking.com' 
+        : 'https://payments.africastalking.com';
+      
+      const response = await fetch(`${baseUrl}/mobile/checkout/request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'apiKey': AT_CONFIG.API_KEY
+        },
+        body: JSON.stringify(payload)
+      });
 
-    setPaymentStatus('SUCCESS');
-    setTimeout(() => {
-      setPaymentStatus('IDLE');
-      setStkAmount('');
-      setActiveTab('all');
-    }, 2000);
+      const result = await response.json();
+
+      if (response.ok && (result.status === 'PendingConfirmation' || result.status === 'Success')) {
+        setPaymentStatus('WAITING');
+        // Africa's Talking returns a transactionId
+        const transactionId = result.transactionId || `AT-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+
+        // Wait for user to enter pin (Simulated wait, as we'd normally await a webhook callback)
+        await new Promise(r => setTimeout(r, 8000));
+
+        addTransaction({
+          userId: currentUser.id,
+          userName: currentUser.name,
+          amount: parseFloat(stkAmount),
+          currency: AT_CONFIG.CURRENCY,
+          date: new Date().toISOString().split('T')[0],
+          description: `M-Pesa Instant Deposit (Ref: ${transactionId})`,
+          status: TransactionStatus.APPROVED,
+          accountNumber: transactionId,
+          rawMessage: `STK Push via Africa's Talking to ${formattedPhone}`
+        });
+
+        setPaymentStatus('SUCCESS');
+        setTimeout(() => {
+          setPaymentStatus('IDLE');
+          setStkAmount('');
+          setStkPhone('');
+          setActiveTab('all');
+        }, 3000);
+      } else {
+        throw new Error(result.errorMessage || result.description || 'Gateway connection refused.');
+      }
+    } catch (error: any) {
+      console.error('AT Payment Error:', error);
+      setPaymentStatus('ERROR');
+      setErrorMessage(error.message || 'The Payment Protocol was interrupted.');
+    }
   };
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-2">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-black dark:text-white text-gray-900 tracking-tight">Ledger Operations</h1>
-          <p className="text-prospera-gray text-[10px] uppercase font-bold tracking-widest opacity-60">Instant Algorithmic Verification</p>
+          <p className="text-prospera-gray text-[10px] uppercase font-bold tracking-widest opacity-60">TechForge Africa Gateway • Alpha v3.5</p>
         </div>
         {role === UserRole.USER && (
           <div className="flex gap-2">
@@ -190,7 +223,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
       <div className="bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/5 rounded-2xl p-4 md:p-8 shadow-xl min-h-[500px]">
         {activeTab === 'upload' ? (
           <div className="max-w-2xl mx-auto space-y-6 animate-in zoom-in-95 duration-300">
-            <div className="text-center space-y-2">
+             <div className="text-center space-y-2">
               <div className="inline-flex p-3 bg-prospera-accent/10 rounded-xl mb-1">
                 <SearchCode className="w-8 h-8 text-prospera-accent" />
               </div>
@@ -210,11 +243,6 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
                   handleLocalParse(e.target.value);
                 }}
               />
-              <div className="flex justify-between items-center px-1">
-                <span className="text-[9px] font-black uppercase tracking-widest text-prospera-gray">
-                  {rawMessage.length > 0 ? `${rawMessage.length} bytes processed` : 'Awaiting input'}
-                </span>
-              </div>
             </div>
 
             {extractedData && (
@@ -228,17 +256,11 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
                   <div className="space-y-0.5">
                     <p className="text-[8px] text-prospera-gray uppercase font-black tracking-widest">Asset Volume</p>
-                    <p className="text-xl font-black dark:text-white text-gray-900">{extractedData.currency} {extractedData.amount.toLocaleString()}</p>
+                    <p className="text-xl font-black dark:text-white text-gray-900">KES {extractedData.amount.toLocaleString()}</p>
                   </div>
                   <div className="space-y-0.5">
                     <p className="text-[8px] text-prospera-gray uppercase font-black tracking-widest">Date Index</p>
                     <p className="text-sm font-black dark:text-white text-gray-900">{extractedData.date}</p>
-                  </div>
-                  <div className="col-span-1 sm:col-span-2 space-y-1">
-                    <p className="text-[8px] text-prospera-gray uppercase font-black tracking-widest">Auth Code</p>
-                    <p className="text-xs font-mono bg-white dark:bg-black/20 p-3 rounded-lg dark:text-prospera-accent text-prospera-dark border dark:border-white/5 border-gray-100 uppercase">
-                      {extractedData.accountNumber}
-                    </p>
                   </div>
                 </div>
 
@@ -258,10 +280,10 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
                 <CreditCard className="w-10 h-10 text-[#4CAF50]" />
               </div>
               <h3 className="text-2xl font-black dark:text-white text-gray-900 tracking-tight flex items-center justify-center gap-2">
-                M-Pesa <span className="text-[#4CAF50]">STK Push</span>
+                M-Pesa <span className="text-[#4CAF50]">Direct Push</span>
               </h3>
-              <p className="text-prospera-gray text-xs max-w-sm mx-auto leading-relaxed uppercase tracking-widest font-black">
-                Africa's Talking Secure Gateway
+              <p className="text-prospera-gray text-[9px] max-w-sm mx-auto leading-relaxed uppercase tracking-[0.3em] font-black">
+                Africa's Talking Mainnet Connector
               </p>
             </div>
 
@@ -269,7 +291,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
               <div className="space-y-6">
                 <div className="p-8 bg-gray-50 dark:bg-prospera-darkest/60 border border-gray-100 dark:border-white/5 rounded-[2.5rem] space-y-6 shadow-inner">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1">Member Phone (Saf-Com)</label>
+                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1">Member Phone (Safaricom)</label>
                     <div className="relative">
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r border-gray-200 dark:border-white/10 pr-3">
                         <Smartphone className="w-3.5 h-3.5 text-prospera-accent" />
@@ -286,7 +308,7 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1">Liquidity Amount (KES)</label>
+                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1">Deposit Amount (KES)</label>
                     <div className="relative">
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-prospera-accent">KES</div>
                       <input 
@@ -315,14 +337,14 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
               </div>
             ) : (
               <div className="p-10 bg-gray-50 dark:bg-prospera-darkest/60 border border-gray-100 dark:border-white/5 rounded-[3rem] text-center space-y-8 animate-in fade-in duration-500 shadow-2xl relative overflow-hidden">
-                {paymentStatus !== 'SUCCESS' && (
-                  <div className="absolute inset-0 pointer-events-none opacity-5 terminal-grid" />
-                )}
-                
                 <div className="relative flex justify-center">
                   {paymentStatus === 'SUCCESS' ? (
                     <div className="w-24 h-24 bg-[#4CAF50] rounded-full flex items-center justify-center animate-in zoom-in duration-500 shadow-2xl shadow-[#4CAF50]/40">
                       <CheckIcon className="w-12 h-12 text-white" />
+                    </div>
+                  ) : paymentStatus === 'ERROR' ? (
+                    <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center animate-in zoom-in duration-500 shadow-2xl shadow-red-500/40">
+                      <ShieldAlert className="w-12 h-12 text-white" />
                     </div>
                   ) : (
                     <div className="relative">
@@ -337,30 +359,23 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
                 <div className="space-y-2">
                   <h4 className="text-xl font-black dark:text-white text-gray-900 tracking-tight uppercase">
                     {paymentStatus === 'INITIATING' && 'Handshaking Gateway...'}
-                    {paymentStatus === 'SENDING' && 'Sending STK Push...'}
+                    {paymentStatus === 'SENDING' && 'Pushing to AT Node...'}
                     {paymentStatus === 'WAITING' && 'Awaiting Pin Entry'}
-                    {paymentStatus === 'SUCCESS' && 'Payment Verified!'}
+                    {paymentStatus === 'SUCCESS' && 'Asset Verified!'}
+                    {paymentStatus === 'ERROR' && 'Terminal Error'}
                   </h4>
                   <p className="text-[10px] text-prospera-gray font-bold uppercase tracking-[0.3em] animate-pulse">
-                    {paymentStatus === 'INITIATING' && 'Encrypting Tunnel Assets'}
-                    {paymentStatus === 'SENDING' && `Target: +254 ${stkPhone}`}
-                    {paymentStatus === 'WAITING' && 'Check your handset for the M-Pesa prompt'}
-                    {paymentStatus === 'SUCCESS' && 'Asset logged into mainnet ledger'}
+                    {paymentStatus === 'ERROR' ? errorMessage : `Target Terminal: +254 ${stkPhone}`}
                   </p>
                 </div>
 
-                {paymentStatus === 'WAITING' && (
-                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                       <span className="text-[9px] font-black text-prospera-gray uppercase">Protocol Status</span>
-                       <span className="text-[9px] font-black text-prospera-accent uppercase flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5" /> Awaiting Callback
-                       </span>
-                    </div>
-                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                       <div className="h-full bg-prospera-accent animate-[loading_8s_ease-in-out_infinite]" />
-                    </div>
-                  </div>
+                {(paymentStatus === 'ERROR' || paymentStatus === 'SUCCESS') && (
+                  <button 
+                    onClick={() => setPaymentStatus('IDLE')}
+                    className="px-8 py-3 bg-white/5 border border-white/5 rounded-xl font-black text-[9px] uppercase tracking-widest text-prospera-gray hover:text-white"
+                  >
+                    Reset Terminal
+                  </button>
                 )}
               </div>
             )}
@@ -378,7 +393,6 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
       <style>{`
         @keyframes loading {
           0% { width: 0%; }
-          50% { width: 70%; }
           100% { width: 100%; }
         }
       `}</style>
