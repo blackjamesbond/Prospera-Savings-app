@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Upload, Plus, History, Ban, FileSearch, Send, AlertCircle, Loader2, Sparkles, CheckCircle2, FileDown, Layers, CheckCircle, SearchCode, Database, X } from 'lucide-react';
+import { Upload, Plus, History, Ban, FileSearch, Send, AlertCircle, Loader2, Sparkles, CheckCircle2, FileDown, Layers, CheckCircle, SearchCode, Database, X, Smartphone, ShieldCheck, CreditCard, ArrowRight, Zap, CheckCircle as CheckIcon, Clock } from 'lucide-react';
 import { useAppContext } from '../context/AppContext.tsx';
 import { UserRole, TransactionStatus } from '../types.ts';
 import TransactionTable from '../components/TransactionTable.tsx';
@@ -12,9 +12,14 @@ interface TransactionManagementProps {
 
 const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, initialSharedText }) => {
   const { transactions, addTransaction, showToast, preferences, currentUser } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'upload'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'upload' | 'instant'>('all');
   const [rawMessage, setRawMessage] = useState('');
   const [extractedData, setExtractedData] = useState<any>(null);
+
+  // Instant Deposit (STK Push) State
+  const [stkPhone, setStkPhone] = useState('');
+  const [stkAmount, setStkAmount] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'INITIATING' | 'SENDING' | 'WAITING' | 'SUCCESS'>('IDLE');
 
   useEffect(() => {
     if (initialSharedText) {
@@ -97,6 +102,47 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
     }
   };
 
+  const handleInstantDeposit = async () => {
+    if (!stkPhone || !stkAmount) {
+      showToast('Please provide valid phone and amount.', 'error');
+      return;
+    }
+
+    setPaymentStatus('INITIATING');
+    
+    // Stage 1: Handshake with Africa's Talking Gateway (Simulated)
+    await new Promise(r => setTimeout(r, 1500));
+    setPaymentStatus('SENDING');
+
+    // Stage 2: Triggering STK Push (Simulated API call to AT)
+    // In a real app: fetch('https://api.africastalking.com/mobile/checkout/request', { ... })
+    await new Promise(r => setTimeout(r, 2000));
+    setPaymentStatus('WAITING');
+
+    // Stage 3: Awaiting User PIN Entry on Phone
+    await new Promise(r => setTimeout(r, 4000));
+    
+    // Complete Payment
+    addTransaction({
+      userId: currentUser.id,
+      userName: currentUser.name,
+      amount: parseFloat(stkAmount),
+      currency: 'KES',
+      date: new Date().toISOString().split('T')[0],
+      description: 'M-Pesa Instant Deposit (STK Push)',
+      status: TransactionStatus.APPROVED, // Typically instant payments are auto-approved
+      accountNumber: `STK-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+      rawMessage: `STK Push via Africa's Talking to ${stkPhone}`
+    });
+
+    setPaymentStatus('SUCCESS');
+    setTimeout(() => {
+      setPaymentStatus('IDLE');
+      setStkAmount('');
+      setActiveTab('all');
+    }, 2000);
+  };
+
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-2">
@@ -105,23 +151,38 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
           <p className="text-prospera-gray text-[10px] uppercase font-bold tracking-widest opacity-60">Instant Algorithmic Verification</p>
         </div>
         {role === UserRole.USER && (
-          <button 
-            onClick={() => setActiveTab('upload')}
-            className="px-6 py-3 bg-prospera-accent text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-prospera-accent/20 hover:scale-105 transition-all"
-          >
-            New Entry
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setActiveTab('instant')}
+              className="px-6 py-3 bg-prospera-accent text-white rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-prospera-accent/20 hover:scale-105 transition-all flex items-center gap-2"
+            >
+              <Zap className="w-3 h-3" /> Instant Deposit
+            </button>
+            <button 
+              onClick={() => setActiveTab('upload')}
+              className="px-6 py-3 bg-white/5 dark:bg-prospera-dark border border-white/5 rounded-xl font-black uppercase tracking-widest text-[9px] hover:scale-105 transition-all"
+            >
+              Manual Upload
+            </button>
+          </div>
         )}
       </div>
 
       <div className="flex border-b border-gray-100 dark:border-white/5 overflow-x-auto no-scrollbar">
-        {['all', 'pending', 'approved', 'rejected', 'upload'].map((tab) => (
+        {[
+          { id: 'all', label: 'All Records' },
+          { id: 'pending', label: 'Verification' },
+          { id: 'approved', label: 'Safe' },
+          { id: 'rejected', label: 'Rejected' },
+          { id: 'upload', label: 'Manual Import' },
+          { id: 'instant', label: 'Instant Pay' }
+        ].map((tab) => (
           <button 
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`px-6 py-4 border-b-2 transition-all whitespace-nowrap text-[9px] font-black uppercase tracking-widest ${activeTab === tab ? 'border-prospera-accent text-prospera-accent bg-prospera-accent/5' : 'border-transparent text-prospera-gray hover:text-gray-900 dark:hover:text-white'}`}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-6 py-4 border-b-2 transition-all whitespace-nowrap text-[9px] font-black uppercase tracking-widest ${activeTab === tab.id ? 'border-prospera-accent text-prospera-accent bg-prospera-accent/5' : 'border-transparent text-prospera-gray hover:text-gray-900 dark:hover:text-white'}`}
           >
-            {tab === 'all' ? 'All Records' : tab === 'pending' ? 'Verification' : tab === 'approved' ? 'Safe' : tab === 'rejected' ? 'Rejected' : 'Add Entry'}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -190,6 +251,120 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
               </div>
             )}
           </div>
+        ) : activeTab === 'instant' ? (
+          <div className="max-w-xl mx-auto space-y-8 animate-in zoom-in-95 duration-300 py-10">
+            <div className="text-center space-y-3">
+              <div className="inline-flex p-4 bg-[#4CAF50]/10 rounded-2xl mb-1 shadow-inner border border-[#4CAF50]/20">
+                <CreditCard className="w-10 h-10 text-[#4CAF50]" />
+              </div>
+              <h3 className="text-2xl font-black dark:text-white text-gray-900 tracking-tight flex items-center justify-center gap-2">
+                M-Pesa <span className="text-[#4CAF50]">STK Push</span>
+              </h3>
+              <p className="text-prospera-gray text-xs max-w-sm mx-auto leading-relaxed uppercase tracking-widest font-black">
+                Africa's Talking Secure Gateway
+              </p>
+            </div>
+
+            {paymentStatus === 'IDLE' ? (
+              <div className="space-y-6">
+                <div className="p-8 bg-gray-50 dark:bg-prospera-darkest/60 border border-gray-100 dark:border-white/5 rounded-[2.5rem] space-y-6 shadow-inner">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1">Member Phone (Saf-Com)</label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r border-gray-200 dark:border-white/10 pr-3">
+                        <Smartphone className="w-3.5 h-3.5 text-prospera-accent" />
+                        <span className="text-xs font-black dark:text-white">+254</span>
+                      </div>
+                      <input 
+                        type="tel" 
+                        placeholder="712345678" 
+                        value={stkPhone}
+                        onChange={(e) => setStkPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                        className="w-full pl-24 pr-6 py-4 bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/10 rounded-2xl focus:border-prospera-accent outline-none font-bold text-sm dark:text-white tracking-widest"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-prospera-gray uppercase tracking-widest ml-1">Liquidity Amount (KES)</label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-prospera-accent">KES</div>
+                      <input 
+                        type="number" 
+                        placeholder="0.00" 
+                        value={stkAmount}
+                        onChange={(e) => setStkAmount(e.target.value)}
+                        className="w-full pl-16 pr-6 py-4 bg-white dark:bg-prospera-dark border border-gray-100 dark:border-white/10 rounded-2xl focus:border-prospera-accent outline-none font-bold text-sm dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-4">
+                  <button 
+                    onClick={handleInstantDeposit}
+                    disabled={!stkPhone || !stkAmount}
+                    className="w-full py-5 bg-[#4CAF50] text-white font-black uppercase tracking-[0.3em] text-[11px] rounded-[1.5rem] flex items-center justify-center gap-3 shadow-2xl shadow-[#4CAF50]/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    Initiate Deposit <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <p className="text-[9px] text-prospera-gray font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                    <ShieldCheck className="w-3 h-3 text-[#4CAF50]" /> Secured via TechForge AT-Connector
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-10 bg-gray-50 dark:bg-prospera-darkest/60 border border-gray-100 dark:border-white/5 rounded-[3rem] text-center space-y-8 animate-in fade-in duration-500 shadow-2xl relative overflow-hidden">
+                {paymentStatus !== 'SUCCESS' && (
+                  <div className="absolute inset-0 pointer-events-none opacity-5 terminal-grid" />
+                )}
+                
+                <div className="relative flex justify-center">
+                  {paymentStatus === 'SUCCESS' ? (
+                    <div className="w-24 h-24 bg-[#4CAF50] rounded-full flex items-center justify-center animate-in zoom-in duration-500 shadow-2xl shadow-[#4CAF50]/40">
+                      <CheckIcon className="w-12 h-12 text-white" />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="w-24 h-24 bg-prospera-accent/10 rounded-full flex items-center justify-center animate-pulse">
+                        <Smartphone className="w-10 h-10 text-prospera-accent" />
+                      </div>
+                      <div className="absolute inset-0 border-4 border-prospera-accent/20 border-t-prospera-accent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xl font-black dark:text-white text-gray-900 tracking-tight uppercase">
+                    {paymentStatus === 'INITIATING' && 'Handshaking Gateway...'}
+                    {paymentStatus === 'SENDING' && 'Sending STK Push...'}
+                    {paymentStatus === 'WAITING' && 'Awaiting Pin Entry'}
+                    {paymentStatus === 'SUCCESS' && 'Payment Verified!'}
+                  </h4>
+                  <p className="text-[10px] text-prospera-gray font-bold uppercase tracking-[0.3em] animate-pulse">
+                    {paymentStatus === 'INITIATING' && 'Encrypting Tunnel Assets'}
+                    {paymentStatus === 'SENDING' && `Target: +254 ${stkPhone}`}
+                    {paymentStatus === 'WAITING' && 'Check your handset for the M-Pesa prompt'}
+                    {paymentStatus === 'SUCCESS' && 'Asset logged into mainnet ledger'}
+                  </p>
+                </div>
+
+                {paymentStatus === 'WAITING' && (
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[9px] font-black text-prospera-gray uppercase">Protocol Status</span>
+                       <span className="text-[9px] font-black text-prospera-accent uppercase flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" /> Awaiting Callback
+                       </span>
+                    </div>
+                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                       <div className="h-full bg-prospera-accent animate-[loading_8s_ease-in-out_infinite]" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="animate-in fade-in duration-300">
             <TransactionTable 
@@ -199,6 +374,14 @@ const TransactionManagement: React.FC<TransactionManagementProps> = ({ role, ini
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes loading {
+          0% { width: 0%; }
+          50% { width: 70%; }
+          100% { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 };
